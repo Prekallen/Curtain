@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block content %}
+<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" rel="stylesheet">
+<style>
+    .ui-autocomplete {
+        z-index: 1001;
+        background: rgba(255, 255, 255, 0.9);
+    }
+    .ui-helper-hidden-accessible {
+        display: none;
+    }
+</style>
+<div class="part-container mt-5">
+    <h1 class="display-4 text-center" style="font-weight: bold; color:white; margin-top:80px;">참여자 정보</h1>
+    <form method="POST" action="." enctype="multipart/form-data" id="eventPartForm">
+        {% csrf_token %}
+        <div class="form-row">
+            {% for field in form %}
+            <div class="form-group col-md-6">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+
+                {% if field.name == 'num' %}
+                {# 전화번호 필드는 type="tel"과 pattern을 적용합니다. #}
+                <input
+                        type="tel"
+                        pattern="^\d{10,11}$"
+                        title="전화번호는 10자리 또는 11자리 숫자로 입력해주세요."
+                        class="form-control"
+                        id="{{ field.id_for_label }}"
+                        placeholder="{{ field.label }}"
+                        name="{{ field.name }}"
+                        oninput="this.value=this.value.replace(/[^0-9]/g,'');"
+                        value="{{ field.value|default_if_none:'' }}"
+                        required
+                />
+                {% elif field.name == 'placeId' %}
+                {# 장소 자동완성용 입력과 hidden 필드 #}
+                <input
+                        type="text"
+                        class="form-control"
+                        id="place"
+                        placeholder="{{ field.label }}"
+                        name="place"
+                        value="{{ field.value|default_if_none:'' }}"
+                        required
+                />
+                <input type="hidden" id="{{ field.id_for_label }}" name="{{ field.name }}" value="{{ field.value|default_if_none:'' }}">
+                {% else %}
+                <input
+                        type="{{ field.field.widget.input_type }}"
+                        class="form-control"
+                        id="{{ field.id_for_label }}"
+                        placeholder="{{ field.label }}"
+                        name="{{ field.name }}"
+                        value="{{ field.value|default_if_none:'' }}"
+                        required
+                />
+                {% endif %}
+                {% if field.errors %}
+                <span style="color: red;">{{ field.errors }}</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        <div class="form-group">
+            <img src="#" id="preview" width="300" alt="이미지 미리보기" style="max-width: 300px; display: none;">
+        </div>
+        <button type="submit" class="fixed-low-button">참여 완료</button>
+        <button type="button" class="fixed-left-button" onclick="location.href='/places/'" style="font-weight: bold;"> BAR LIST</button>
+    </form>
+</div>
+<!-- autocomplete를 사용하기 위한 script-->
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<script>
+    /* 검색 반자동 완성 */
+    $(function() {
+        $("#place").autocomplete({
+            source: "{% url 'autocomplete' %}",
+            minLength: 2,
+            select: function(event, ui) {
+                $("#place").val(ui.item.label);
+                $("#{{ form.placeId.id_for_label }}").val(ui.item.value);
+                return false;
+            }
+        });
+    });
+
+    /* URL에서 placeId 값을 가져와서 입력 필드에 설정 */
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const placeId = urlParams.get('placeId');
+        if (placeId) {
+            fetch(`/autocomplete/?id=${placeId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length > 0) {
+                        const placeName = data[0].label; // 예시: [{ "label": "매장명", "value": "placeId" }]
+                        document.getElementById('place').value = placeName;
+                        document.getElementById('id_placeId').value = placeId;
+                    }
+                })
+                .catch(error => console.error('Error fetching place name:', error));
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        /* 폼 유효성 검사와 최종 확인 */
+        const form = document.getElementById("eventPartForm");
+        form.addEventListener("submit", function (e) {
+            // HTML5 내장 유효성 검사 수행
+            if (!this.checkValidity()) {
+                alert("필수 항목이 누락되었거나 입력값이 올바르지 않습니다. 다시 확인해 주세요.");
+                e.preventDefault();
+            } else {
+                if (!confirm("모든 입력 내용이 올바른가요? 제출하시겠습니까?")) {
+                    e.preventDefault();
+                }
+            }
+        });
+
+        /* 이미지 미리보기 */
+        const fileInput = document.querySelector('input[type="file"]');
+        const previewImg = document.getElementById('preview');
+        console.log(fileInput);  // fileInput이 null인지 출력
+
+        if (fileInput) {
+            fileInput.addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        previewImg.src = e.target.result;
+                        previewImg.style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

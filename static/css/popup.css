@@ -1,0 +1,106 @@
+/* popup css */
+/* Infowindow의 콘텐츠 박스 스타일 */
+.infowindow-content {
+    margin: 0 !important; /* 외부 여백 제거 */
+    padding: 0 !important; /* 내부 여백 제거 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px; /* 글씨 크기 지정 */
+    background-color: #bc1d21; /* 배경색 */
+    border: 1px solid #ccc; /* 경계선 */
+    border-radius: 0; /* 모서리 둥글게 */
+    font-family: 'Pretendard', sans-serif !important;
+    font-weight: bold;
+}
+/* 그리드 레이아웃: 데스크탑에서는 5열, 중간 화면에서는 3열, 모바일에서는 1열 */
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin: 20px 0;
+}
+
+/* 데스크탑 중간 화면 (예: 769px ~ 1200px) */
+@media (min-width: 769px) and (max-width: 1200px) {
+    .grid-container {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* 모바일: 1열로 표시 */
+@media (max-width: 768px) {
+    .grid-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 각 업체 카드는 카드 형태로, 내부는 수직 정렬: 이미지 위에 텍스트 */
+.place-item {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease;
+    cursor: pointer;
+    font-family: 'Pretendard', sans-serif !important;
+    font-weight: bold;
+    color: black;
+}
+
+.place-item:hover {
+    transform: scale(1.02);
+}
+
+/* 이미지는 고정 높이로 지정하고 object-fit으로 잘라내기 */
+.place-item img {
+    display: block;
+    width: 100%;
+    height: 100px; /* 고정 높이: 이미지가 너무 넓게 보이지 않도록 */
+    object-fit: contain; /* 이미지 전체 보이도록 */
+    border-bottom: 1px solid #ddd;
+}
+/* 텍스트 영역: 적절한 여백 및 글자 크기 조정 */
+.place-details {
+    padding: 8px 10px;
+    font-family: 'Pretendard', sans-serif !important;
+    font-weight: bold;
+    color: black;
+}
+.place-details h2 {
+    font-size: 1rem;
+    margin: 5px 0;
+}
+.place-details p {
+    font-size: 0.85rem;
+    margin: 3px 0;
+}
+
+/* 모바일 최적화 */
+@media (max-width: 768px) {
+    .grid-container {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+    .place-item img {
+        height: 100px;  /* 모바일에서는 이미지 높이를 줄임 */
+        object-fit: contain; /* 이미지 전체 보이도록 */
+    }
+    .place-details h2 {
+        font-size: 0.9rem;
+        font-family: 'Pretendard', sans-serif !important;
+    }
+    .place-details p {
+        font-size: 0.8rem;
+        font-family: 'Pretendard', sans-serif !important;
+    }
+    .place-details a {
+        font-family: 'Pretendard', sans-serif !important;
+    }
+}
+/* 팝업 내용에 여백 추가 */
+.popup-content {
+    padding: 5px 5px 30px 5px !important; /* 위, 오른쪽, 아래, 왼쪽 */
+    z-index: 1002;
+}

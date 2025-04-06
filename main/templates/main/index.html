@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="">
+    <head>
+        <title>My Django App</title>
+    </head>
+    <body>
+        <h1>Welcome to My Django App! in main index</h1>
+
+        {% load static %}
+        <img src="{% static 'main/okinawa.JPG' %}" width="200" height="200">
+        {% load static %}
+        <link rel="stylesheet" type="text/css" href="{% static 'main/style.css' %}">
+    </body>
+</html>

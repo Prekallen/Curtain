@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% load static %}
+{% load mul %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/popup.css' %}">
+
+<!-- Fixed Button -->
+<button class="fixed-left-button" onclick="location.href='/event_map'">지도</button>
+
+<div class="container list-container">
+    <div class="fixed-header">
+        <h1 class="my-4 text-center header-title">BAR LIST</h1>
+    </div>
+    {% if places %}
+    <!-- 검색 기능 -->
+    <form method="get" action="" class="my-3">
+        <div class="input-group">
+            <input type="text" name="q" class="form-control" placeholder="업체명 검색" value="{{ request.GET.q }}">
+            <button type="submit" class="btn btn-secondary">검색</button>
+        </div>
+    </form>
+    <!-- 그리드 컨테이너에 각 업체 아이템이 들어갑니다 -->
+    <div class="grid-container">
+        {% for place in places %}
+        <div class="place-item" data-id="{{ place.id }}">
+            {% if place.placeImage %}
+            <img src="{{ place.placeImage.url }}" alt="{{ place.place }}">
+            {% else %}
+            <img src="{% static 'images/default.png' %}" alt="기본 이미지">
+            {% endif %}
+            <div class="place-details">
+                <h2 class="h5 font-weight-bold">{{ place.place }}{{ place.placeId }}</h2>
+                <p><strong>주소:</strong> {{ place.address }}</p>
+                {% if place.distance %}
+                {% if place.distance < 1 %}
+                <p><strong>거리:</strong> 약 {{ place.distance|mul:100|floatformat:2 }} m</p>
+                {% else %}
+                <p><strong>거리:</strong> 약 {{ place.distance|floatformat:2 }} km</p>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <!-- 페이지네이션 (생략 부분은 기존 코드와 동일) -->
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            {% if has_previous_group %}
+            <li class="page-item">
+                <a class="page-link" href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ previous_group_page }}" aria-label="Previous Group">
+                    <span aria-hidden="true">&laquo; 이전</span>
+                </a>
+            </li>
+            {% endif %}
+
+            {% for num in page_numbers %}
+            {% if places.number == num %}
+            <li class="page-item active">
+                <span class="page-link">{{ num }}</span>
+            </li>
+            {% else %}
+            <li class="page-item">
+                <a class="page-link" href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ num }}">{{ num }}</a>
+            </li>
+            {% endif %}
+            {% endfor %}
+
+            {% if has_next_group %}
+            <li class="page-item">
+                <a class="page-link" href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ next_group_page }}" aria-label="Next Group">
+                    <span aria-hidden="true">다음 &raquo;</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% else %}
+    <p class="text-center">등록된 업체가 없습니다.</p>
+    {% endif %}
+</div>
+
+<!-- Popup container -->
+<div id="popup" class="popup">
+    <div class="popup-content">
+        <span class="close-btn btn btn-secondary">닫기</span>
+        <div id="popup-body"></div>
+        <button class="fixed-low-button" id="event-participation-button">이벤트 참여하기</button>
+    </div>
+</div>
+
+<!-- 기존 스크립트 (위치정보, 팝업 등) -->
+<script>
+    // URL에서 lat, lng 파라미터 체크 및 geolocation
+    var params = new URLSearchParams(window.location.search);
+    if (!params.has('lat') || !params.has('lng')) {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(success, error);
+        } else {
+            alert('이 브라우저에서는 위치 정보를 지원하지 않습니다.');
+        }
+    }
+
+    function success(position) {
+        var latitude = position.coords.latitude;
+        var longitude = position.coords.longitude;
+        if (!params.has('q') || params.get('q').trim() === '') {
+            params.set('lat', latitude);
+            params.set('lng', longitude);
+            window.location.search = params.toString();
+        }
+    }
+
+    function error(err) {
+        console.warn('ERROR(' + err.code + '): ' + err.message);
+        alert('위치 정보를 사용할 수 없습니다. 전체 업체를 표시합니다.');
+    }
+
+    // 팝업 처리 스크립트
+    document.addEventListener("DOMContentLoaded", function() {
+        const placeItems = document.querySelectorAll('.place-item');
+        const popup = document.getElementById('popup');
+        const popupContent = document.getElementById('popup-body');
+        const closeBtn = document.querySelector('.close-btn');
+        const eventButton = document.getElementById('event-participation-button');
+        let selectedPlaceId = null;
+
+        placeItems.forEach(item => {
+            item.addEventListener('click', function () {
+                selectedPlaceId = this.getAttribute('data-id');
+                fetch(`/place/${selectedPlaceId}/`)
+                    .then(response => response.text())
+                    .then(data => {
+                        popupContent.innerHTML = data;
+                        popup.style.display = "block";
+                    })
+                    .catch(error => console.log('Error:', error));
+            });
+        });
+
+        closeBtn.addEventListener('click', function () {
+            popup.style.display = "none";
+        });
+
+        eventButton.addEventListener('click', function () {
+            if (selectedPlaceId) {
+                location.href = `/eventCheck?placeId=${selectedPlaceId}`;
+            }
+        });
+
+        window.addEventListener('click', function (event) {
+            if (event.target == popup) {
+                popup.style.display = "none";
+            }
+        });
+    });
+    function copyToClipboard(text) {
+        if (navigator.clipboard) {
+            // 클립보드 API 지원
+            navigator.clipboard.writeText(text)
+                .then(function() {
+                    alert('주소가 클립보드에 복사되었습니다: ' + text);
+                })
+                .catch(function(err) {
+                    console.error('복사 실패:', err);
+                    alert('주소 복사 중 문제가 발생했습니다.');
+                });
+        } else {
+            // 클립보드 API 미지원 브라우저 (대안 방법)
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                alert('주소가 클립보드에 복사되었습니다: ' + text);
+            } catch (err) {
+                console.error('복사 실패:', err);
+                alert('주소 복사 중 문제가 발생했습니다.');
+            }
+            document.body.removeChild(textarea);
+        }
+    }
+</script>
+{% endblock %}

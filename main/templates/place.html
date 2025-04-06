@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<div class="container">
+    <h3 class="my-4 text-center">{{ place.place }}</h3>
+    <div class="place-detail">
+        {% if place.placeImage %}
+        <img src="{{ place.placeImage.url }}" alt="{{ place.place }}">
+        {% else %}
+        <img src="{% static 'images/default.png' %}" alt="기본 이미지">
+        {% endif %}
+        <div class="place-details">
+            <p><strong>상호:</strong> <br/>{{ place.place }}</p>
+            <p>
+                <strong>주소:</strong> <br/>
+                <span id="place-address" onclick="copyToClipboard('{{ place.address }}')"
+                      style="cursor: pointer; color: blue; text-decoration: underline;">
+                    {{ place.address }}
+                </span>
+            </p>
+            <p>
+                <strong>연락처:</strong> <br/>
+                <a href="tel:{{ place.placeNum }}" style="color: blue; text-decoration: underline;">
+                    {{ place.placeNum }}
+                </a>
+            </p>
+            <!-- <p><strong>설명:</strong> {{ place.description }}</p> -->
+        </div>
+    </div>
+</div>
+{% endblock %}

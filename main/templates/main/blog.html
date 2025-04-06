@@ -1,0 +1,49 @@
+<html>
+    <head>
+        {% load static %}
+        <link rel="stylesheet" type="text/css" href="{% static 'main/bootstrap.min.css' %}">
+        <title>Blog List</title>
+    </head>
+    <body>
+        <h1>게시판 페이지입니다</h1>
+        <!-- 게시판(postlist)의 게시글(list)을 하나씩 보여줍니다 -->
+        <!-- {와 %로 이루어진 구문 내부엔 파이썬이 사용됩니다 -->
+        <table>
+            {% for list in postlist %}
+                <!-- 게시글 클릭시 세부페이지로 넘어갑니다 -->
+                <ul>
+                    <li><a href="{{list.pk}}/">{{list.postname}}</a></li><a href="/blog/{{list.pk}}/remove">삭제</a>
+                </ul>
+            {% endfor %}
+            <button><a href="new_post/">글쓰기</a></button>
+        </table>
+        <div class="container my-3">
+            <table class="table">
+                <thead>
+                <tr class="thead-dark">
+                    <th>번호</th>
+                    <th>제목</th>
+                    <th>작성일시</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% if postlist %}
+                {% for list in postlist %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>
+                        <a href="{{ list.pk }}/">{{ list.postname }}</a>
+                    </td>
+                    <td>{{ list.create_date }}</td>
+                </tr>
+                {% endfor %}
+                {% else %}
+                <tr>
+                    <td colspan="3" 질문이 없습니다.></td>
+                </tr>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </body>
+</html>

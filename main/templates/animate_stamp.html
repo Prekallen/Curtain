@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% load mul %}
+{% block content %}
+<style>
+    /* SVG 영역 중앙 정렬 */
+    svg {
+        display: block;
+        margin: 20px auto;
+    }
+
+    /* 기본 세그먼트 스타일 */
+    .segment {
+        stroke: #ccc;         /* 테두리 색상 */
+        stroke-width: 2;
+        fill: #f8f9fa;        /* 기본 배경색 (연한 회색) */
+    }
+
+    /* 채워진 상태의 애니메이션 */
+    @keyframes fillAnimation {
+        from { fill: #f8f9fa; }
+        to { fill: #dc3545; }   /* 원하는 채워진 색상 (예: Bootstrap danger 색상) */
+    }
+
+    .filled {
+        animation: fillAnimation 5s ease forwards; /* 애니메이션 길이를 5초로 설정 (원하는 길이로 조정 가능) */
+    }
+     .common-tspan {
+         fill: white; /* 텍스트 색상 */
+         font-size: 10px; /* 폰트 크기 */
+         font-family: 'Pretendard', sans-serif; /* 폰트 스타일 */
+         font-weight: bold; /* 폰트 굵기 */
+     }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<button class="fixed-left-button" onclick="location.href='/places'">BAR LIST</button>
+<div class="container">
+    <div class="event-description" style="margin-top: 10px;">
+        <h1 class="text-center" style="color:white;">갓파더위크 이벤트<br>참여 진행도</h1>
+        <!-- 상단: 스탬프 진행 상태(0 ~ 6) -->
+        <!-- 아래 코드는 Django 템플릿 내부에서 stamp_count에 따라 각 세그먼트에 filled 클래스를 조건부로 적용합니다 -->
+        <!-- 총 6세그먼트가 좌측부터 우측으로 배치된 progress bar -->
+        <svg viewBox="0 0 620 130"> <!-- viewBox 높이를 줄여서 SVG 영역 확보 -->
+            <!-- 첫 번째 세그먼트 (왼쪽에서 가장 처음) -->
+            <g class="segment-group">
+                <rect x="10" y="10" width="90" height="80"
+                      class="segment {% if stamp_count >= 1 %}filled{% endif %}"
+                      {% if stamp_count >= 1 %}style="animation-delay: 0s;"{% endif %}/>
+                    <text x="55" y="95" text-anchor="middle" fill="#000">
+                        <tspan x="55" dy="1.2em"  class="common-tspan">디사론노</tspan>
+                        <tspan x="55" dy="1.2em" class="common-tspan">미니어처 증정</tspan>
+                    </text> <!-- 1. 텍스트 추가 -->
+            </g>
+
+            <!-- 두 번째 세그먼트 -->
+            <g class="segment-group">
+                <rect x="110" y="10" width="90" height="80"
+                      class="segment {% if stamp_count >= 2 %}filled{% endif %}"
+                      {% if stamp_count >= 2 %}style="animation-delay: 1s;"{% endif %}/>
+                    <text x="155" y="95" text-anchor="middle" fill="#000">
+                        <tspan x="155" dy="1.2em" class="common-tspan"></tspan>
+                    </text> <!-- 2. 텍스트 추가 -->
+            </g>
+
+            <!-- 세 번째 세그먼트 -->
+            <g class="segment-group">
+                <rect x="210" y="10" width="90" height="80"
+                      class="segment {% if stamp_count >= 3 %}filled{% endif %}"
+                      {% if stamp_count >= 3 %}style="animation-delay: 2s;"{% endif %}/>
+                    <text x="255" y="95" text-anchor="middle" fill="#000">
+                        <tspan x="255" dy="1.2em" class="common-tspan">디사론노</tspan>
+                        <tspan x="255" dy="1.2em" class="common-tspan">시그니처 칵테일 1잔</tspan>
+                    </text> <!-- 3. 텍스트 추가 -->
+            </g>
+
+            <!-- 네 번째 세그먼트 -->
+            <g class="segment-group">
+                <rect x="310" y="10" width="90" height="80"
+                      class="segment {% if stamp_count >= 4 %}filled{% endif %}"
+                      {% if stamp_count >= 4 %}style="animation-delay: 3s;"{% endif %}/>
+                    <text x="355" y="95" text-anchor="middle" fill="#000">
+                        <tspan x="355" dy="1.2em" class="common-tspan"></tspan>
+                    </text> <!-- 4. 텍스트 추가 -->
+            </g>
+
+            <!-- 다섯 번째 세그먼트 -->
+            <g class="segment-group">
+                <rect x="410" y="10" width="90" height="80"
+                      class="segment {% if stamp_count >= 5 %}filled{% endif %}"
+                      {% if stamp_count >= 5 %}style="animation-delay: 4s;"{% endif %}/>
+                    <text x="455" y="95" text-anchor="middle" fill="#000">
+                        <tspan x="455" dy="1.2em" class="common-tspan"></tspan>
+                    </text> <!-- 5. 텍스트 추가 -->
+            </g>
+
+            <!-- 여섯 번째(마지막) 세그먼트 -->
+            <g class="segment-group">
+                <rect x="510" y="10" width="90" height="80"
+                      class="segment {% if stamp_count >= 6 %}filled{% endif %}"
+                      {% if stamp_count >= 6 %}style="animation-delay: 5s;"{% endif %}/>
+                    <text x="555" y="95" text-anchor="middle" fill="#000">
+                        <tspan x="555" dy="1.2em" class="common-tspan">디사론노</tspan>
+                        <tspan x="555" dy="1.2em" class="common-tspan">갓파더 굿즈 증정</tspan>
+                        <tspan x="555" dy="1.8em" style="font-size: 6px;" fill="white">*증정품 개별 발송</tspan>
+                    </text> <!-- 6. 텍스트 추가 -->
+            </g>
+        </svg>
+
+
+        <!-- 하단: 중복 참가자들의 상세 정보 리스트 -->
+        <div class="container my-4 ">
+            <h2 class="mb-4" style="color:white;">참여자 정보</h2>
+            <p class="mb-1">참여자: {{ participant.name }} (번호: {{ participant.num }})</p>
+            <div class="list-group">
+                {% for dup in duplicates %}
+                <div class="list-group-item">
+                    <div class="d-flex w-100 justify-content-between">
+                        <small class="text-muted">{{ dup.date }}</small>
+                    </div>
+                    <p class="mb-1"><strong>장소:</strong> {{ dup.place }}</p>
+                    <div>
+                        <strong>영수증 이미지:</strong><br>
+                        {% if dup.receiptImage %}
+                        <img src="{{ dup.receiptImage.url }}" alt="Receipt Image" class="img-fluid" style="max-width:100px;">
+                        {% else %}
+                        <em>이미지 없음</em>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="list-group-item text-center">
+                    갓파더 위크에 오신걸 환영합니다.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="container text-center mt-4">
+        <!-- 공유할 이미지 미리보기: 공유하기 버튼 위에 표시 -->
+        <!-- <img src="{{ MEDIA_URL }}godfather_TT.png" alt="공유할 이미지" class="img-fluid fixed-right-button" style="max-width:300px;" > -->
+        <button class="btn fixed-low-button btn-primary" id="share-button">공유하기</button>
+    </div>
+</div>
+<script>
+    document.getElementById('share-button').addEventListener('click', async () => {
+        const websiteUrl = 'https://fjkorea2006.wixsite.com/my-site-3'; //window.location.origin; // 홈페이지 주소 가져오기
+
+        try {
+            if (navigator.share) {
+                // 모바일 환경에서 Web Share API 사용
+                await navigator.share({
+                    title: '갓파더위크 이벤트',
+                    text: '갓파더위크 이벤트에 참여하세요!',
+                    url: websiteUrl,
+                });
+                console.log('공유 성공!');
+            } else {
+                // 데스크톱 환경에서 클립보드에 URL 복사
+                if (navigator.clipboard) {
+                    await navigator.clipboard.writeText(websiteUrl);
+                    alert('홈페이지 주소가 클립보드에 복사되었습니다: ' + websiteUrl);
+                } else {
+                    // 클립보드 API도 지원되지 않는 경우 처리
+                    alert('공유 기능과 클립보드 복사를 지원하지 않습니다.');
+                }
+            }
+        } catch (err) {
+            console.error('공유 실패:', err);
+            alert('공유 중 문제가 발생했습니다.');
+        }
+    });
+</script>
+{% endblock %}

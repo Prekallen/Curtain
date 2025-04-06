@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block content %}
+<script>
+    // URL에서 placeId 값을 가져오는 함수
+    function getPlaceId() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('placeId');
+    }
+
+    function checkParticipation() {
+        const checkbox = document.getElementById('agreeCheckbox');
+        if (checkbox.checked) {
+            const placeId = getPlaceId();
+            if (placeId) {
+                window.location.href = `/events/?placeId=${placeId}`;
+            } else {
+                alert('유효한 placeId가 없습니다.');
+            }
+        } else {
+            alert('개인정보 수집 및 이용에 동의를 체크해주세요.');
+        }
+    }
+</script>
+<div class="container mt-5 text-center">
+    <h1 class="logo-container"><img src="{{ MEDIA_URL }}Godfather_WEEK.png" alt="갓파더위크 로고" class="responsive-logo"></h1>
+    <p>
+        <button class="btn btn-primary" style="background: #FF4500"id="participateButton">개인정보 수집 및 이용 안내</button>
+    </p>
+    <input type="checkbox" class="form-check-input" id="agreeCheckbox">
+    <label class="form-check-label" for="agreeCheckbox">
+        이벤트 참여 개인정보 수집 및 이용에 동의
+    </label>
+    <br>
+    <!-- 팝업 오버레이 -->
+    <div class="popup-overlay" id="popupOverlay"></div>
+
+    <!-- 팝업 창 -->
+    <div class="popup" id="popup">
+        <button class="btn btn-secondary close-btn" id="closePopupButton">닫기</button>
+        <div class="popup-content" style="color:black; text-align:left">
+            <h2>이벤트 참여 개인정보보호법 안내문</h2>
+
+            <p>1. 개인정보의 수집 및 이용 목적<br>
+                귀하의 개인정보는 다음과 같은 목적을 위해 수집 및 이용됩니다:<br>
+                이벤트 참여 확인 및 관리<br>
+                당첨자 선정 및 연락<br>
+                이벤트 관련 안내 및 문의 응대<br>
+                마케팅 및 광고 활용<br></p>
+            <p>2. 수집하는 개인정보 항목<br>
+                당사는 이벤트 참여를 위해 다음과 같은 개인정보를 수집합니다:<br>
+                이름, 연락처(전화번호, 이메일 주소)<br>
+                기타 이벤트 참여와 관련된 정보<br></p>
+            <p>3. 개인정보의 보유 및 이용 기간<br>
+                당사는 수집된 개인정보를 법령에 따라 일정 기간 동안 보유하며, 보유 기간이 경과한 후에는 해당 정보를 지체 없이 파기합니다.<br>
+                이벤트 종료 후 파기<br></p>
+            <p>4. 개인정보의 제공 및 공유<br>
+                당사는 원칙적으로 귀하의 개인정보를 제3자에게 제공하지 않습니다. 다만, 다음의 경우에는 예외로 합니다:<br>
+                귀하의 사전 동의를 받은 경우<br>
+                법령의 규정에 의한 경우<br></p>
+            <p>5. 개인정보의 보호 조치<br>
+                당사는 개인정보의 안전성을 확보하기 위해 다음과 같은 조치를 취합니다:<br>
+                개인정보의 암호화<br>
+                해킹 등에 대비한 기술적 대책<br>
+                개인정보 접근 제한<br></p>
+            <p>6. 개인정보보호 담당자 연락처<br>
+                개인정보와 관련된 문의사항이 있으시면 아래 연락처로 문의해 주시기 바랍니다:<br>
+                담당자: 페퍼컴퍼니 <br>
+                연락처: 010-7353-8803<br>
+                이메일: together.pepper@gmail.com</p>
+
+            <br>
+        </div>
+    </div>
+    <button class="btn btn-success " onclick="checkParticipation()">확인</button>
+    <button class="btn btn-secondary" onclick="location.href='/places'">BAR LIST</button>
+</div>
+<script>
+    // 팝업 및 오버레이 표시
+    document.getElementById('participateButton').addEventListener('click', function() {
+        document.getElementById('popupOverlay').style.display = 'block';
+        document.getElementById('popup').style.display = 'block';
+    });
+
+    // 팝업 닫기
+    document.getElementById('closePopupButton').addEventListener('click', function() {
+        document.getElementById('popupOverlay').style.display = 'none';
+        document.getElementById('popup').style.display = 'none';
+    });
+
+</script>
+{% endblock %}

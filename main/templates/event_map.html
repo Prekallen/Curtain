@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+{% block content %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/map.css' %}">
+<link rel="stylesheet" href="{% static 'css/popup.css' %}">
+
+<div id="map"></div>
+
+<div id="region-buttons">
+    <button class="region-button" onclick="returnToUserLocation()">내 위치</button>
+    {% if unique_areas is not none %}
+    <button class="region-button" onclick="showRegion('all')">전체</button>
+    {% endif %}
+    {% for area in unique_areas %}
+    <button class="region-button" onclick="showRegion('{{ area }}')">{{ area }}</button>
+    {% endfor %}
+</div>
+
+<button class="fixed-low-button btn-secondary" onclick="location.href='/places'">BAR LIST</button>
+
+<!-- Popup container -->
+<div id="popup" class="popup">
+    <div class="popup-content">
+        <span class="close-btn btn btn-secondary">닫기</span>
+        <div id="popup-body"></div>
+        <button class="fixed-low-button" id="event-participation-button">이벤트 참여하기</button>
+    </div>
+</div>
+<style>
+    .place-item {
+        cursor: pointer;
+        color: #626262;
+        text-decoration: none;
+    }
+
+    .place-item:hover {
+        color: #b6b4b4;
+    }
+
+</style>
+<script>
+    // 서버에서 전달받은 매장 데이터 (JSON)
+    let places = {{ places_json|safe }};
+    let map;
+    let infowindow;       // 전역 infowindow (재사용)
+    let currentUserLocation;
+    let initialLoad = true; // 초기 로딩 시 전체 영역 보기 적용
+
+    // 모바일 디바이스 판별 함수
+    function isMobile() {
+        return /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    }
+
+    // 현재 위치를 가져오는 함수 (navigator.geolocation 우선 사용)
+    function getUserPosition(callback) {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    let userPos = new naver.maps.LatLng(
+                        position.coords.latitude,
+                        position.coords.longitude
+                    );
+                    callback(userPos);
+                },
+                function(error) {
+                    console.error("GPS 정보를 가져올 수 없습니다. 기본 위치를 설정합니다.(서울)");
+
+                    // 에러 코드에 따라 적절한 메시지 표시
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                            alert("GPS 접근이 차단되었습니다. 내 위치 기능을 사용하려면 브라우저 설정에서 위치 권한을 허용해주세요.");
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            alert("현재 위치 정보를 사용할 수 없습니다. 네트워크 연결을 확인하세요.");
+                            break;
+                        case error.TIMEOUT:
+                            alert("GPS 요청이 시간 초과되었습니다. 다시 시도해주세요.");
+                            break;
+                        default:
+                            alert("알 수 없는 오류가 발생했습니다. 기본 위치로 설정됩니다.(서울)");
+                            break;
+                    }
+
+                    // 기본 위치를 설정 (서울)
+                    var defaultPos = new naver.maps.LatLng(37.5665, 126.9780); // 서울
+                    callback(defaultPos);
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+        } else {
+            console.warn("Geolocation API를 지원하지 않습니다. 기본 위치를 설정합니다.(서울)");
+            alert("브라우저가 GPS를 지원하지 않습니다. 최신 브라우저를 사용해주세요.");
+            let defaultPos = new naver.maps.LatLng(37.5665, 126.9780); // 서울
+            callback(defaultPos);
+        }
+    }
+
+
+    // 지도 초기화 함수
+    function initMap(center) {
+        if (!center) {
+            center = new naver.maps.LatLng(37.5665, 126.9780); // 서울 좌표 (기본값)
+        }
+
+        let zoomLevel = isMobile() ? 11 : 13;
+        map = new naver.maps.Map("map", {
+            center: center,
+            zoom: zoomLevel
+        });
+        console.log("Map initialized with center:", center);
+
+        // 사용자 위치 마커 추가
+        let userMarker = new naver.maps.Marker({
+            position: center,
+            map: map,
+            title: "현재 위치"
+        });
+        // 사용자 위치 Infowindow 생성 및 열기
+        let userInfoWindow = new naver.maps.InfoWindow({
+            content: `
+            <div style="padding:5px; font-size:14px; color:#000;">
+                <strong>현재 위치</strong>
+            </div>
+        `,
+            backgroundColor: "#fff",
+            borderColor: "#ccc",
+            borderWidth: 1,
+            anchorSize: new naver.maps.Size(10, 10),
+            pixelOffset: new naver.maps.Point(0, -10)
+        });
+
+        // 내 위치 마커 위에 Infowindow를 기본으로 열기
+        userInfoWindow.open(map, userMarker);
+
+        // 전역 infowindow 재사용 (초기화)
+        infowindow = new naver.maps.InfoWindow({ anchorSkew: true });
+
+        // 매장 데이터에 따른 마커 생성
+        if (places && places.length > 0) {
+            places.forEach(function (place) {
+                let markerPos = new naver.maps.LatLng(place.latitude, place.longitude);
+                let marker = new naver.maps.Marker({
+                    position: markerPos,
+                    map: map,
+                    title: place.place,  // 매장이름
+                    zIndex: 100
+                });
+
+                // Infowindow 생성
+                let infowindow = new naver.maps.InfoWindow({
+                    content: `
+                        <div class="infowindow-content place-item" style="cursor:pointer;" onclick="openPopup(${place.id})" data-id="${place.id}">
+                            <strong>${place.place}</strong>
+                        </div>
+                    `,
+                    backgroundColor: "#fff",
+                    borderColor: "#ccc",
+                    borderWidth: 1,
+                    anchorSize: new naver.maps.Size(10, 10),
+                    anchorSkew: true,
+                    anchorColor: "#fff",
+                    pixelOffset: new naver.maps.Point(0, -10)
+                });
+
+
+                // 마커 클릭 시 Infowindow 표시
+                naver.maps.Event.addListener(marker, "click", function () {
+                    infowindow.open(map, marker);
+                });
+            });
+        } else {
+            console.error("No places data available.");
+        }
+
+        // 초기 로딩 시 '전체' 지역 적용하여 지도 범위를 조정
+        if (initialLoad) {
+            initialLoad = false;
+            showRegion('all');
+        }
+    }
+
+    // 중심 좌표 계산 함수 (여러 지점의 평균 좌표)
+    function calculateCenter(points) {
+        let latSum = 0, lngSum = 0;
+        points.forEach(function(point) {
+            latSum += point.lat();
+            lngSum += point.lng();
+        });
+        return new naver.maps.LatLng(latSum / points.length, lngSum / points.length);
+    }
+
+    // 특정 지역별로 매장 정보를 중심으로 지도 조정하는 함수
+    function showRegion(region) {
+        let points = [];
+        let targetZoomLevel = isMobile() ? 13 : 15;
+        let allZoomLevel = isMobile() ? 11 : 13;
+
+        if (region.trim().toLowerCase() === 'all') {
+            places.forEach(function(place) {
+                let pos = new naver.maps.LatLng(place.latitude, place.longitude);
+                points.push(pos);
+            });
+            map.setZoom(allZoomLevel); // 전체 보기 시 줌 레벨 설정
+        } else {
+            places.forEach(function(place) {
+                if (place.area.trim().toLowerCase().includes(region.trim().toLowerCase())) {
+                    let pos = new naver.maps.LatLng(place.latitude, place.longitude);
+                    points.push(pos);
+                }
+            });
+        }
+
+        if (points.length === 0) {
+            alert("선택하신 지역에 해당하는 매장이 없습니다.");
+            return;
+        } else if (points.length === 1) {
+            map.setCenter(points[0]);
+            if (region.trim().toLowerCase() !== 'all') {
+                map.setZoom(targetZoomLevel);
+            }
+            return;
+        } else {
+            let bounds = new naver.maps.LatLngBounds();
+            points.forEach(function(point) {
+                bounds.extend(point);
+            });
+            map.fitBounds(bounds, { padding: 50 });
+
+            // 범위에 포함되는 모든 마커의 중심 좌표로 지도 중심 재조정
+            let center = calculateCenter(points);
+            map.setCenter(center);
+
+            if (region.trim().toLowerCase() !== 'all') {
+                setTimeout(function() {
+                    map.setZoom(targetZoomLevel);
+                }, 500);
+            }
+        }
+    }
+
+    // "내 위치" 버튼 클릭 시 현재 위치로 지도 재조정하는 함수
+    function returnToUserLocation() {
+        if (currentUserLocation) {
+            map.setCenter(currentUserLocation);
+            map.setZoom(15);
+            console.log("Returning to user location:", currentUserLocation);
+        } else {
+            alert("현재 위치 정보를 가져올 수 없습니다.");
+        }
+    }
+
+    // 모든 스크립트, DOM, 네트워크 요청이 완료된 후 실행 (defer 옵션 덕분에 window.onload 시점에 실행됨)
+    window.onload = function() {
+        if (typeof naver === 'undefined') {
+            console.error("Naver Maps API 로드 실패!");
+            return;
+        }
+        // 현재 위치를 가져와 지도 초기화
+        getUserPosition(function(userLocation) {
+            currentUserLocation = userLocation;
+            initMap(userLocation);
+        });
+    };
+    // 전역변수 선언
+    let selectedPlaceId = null;
+    function openPopup(placeId) {
+        const popup = document.getElementById("popup");
+        const popupContent = document.getElementById("popup-body");
+
+        fetch(`/place/${placeId}/`) // placeId에 해당하는 데이터를 가져옵니다.
+            .then(response => response.text())
+            .then(data => {
+                popupContent.innerHTML = data; // 팝업 내용에 데이터를 삽입
+                popup.style.display = "block"; // 팝업창 열기
+                selectedPlaceId = placeId; // 클릭한 매장의 ID를 저장
+                console.log("선택된 매장 ID:", selectedPlaceId);
+            })
+            .catch(error => console.error("Error fetching place data:", error));
+    }
+    document.addEventListener("DOMContentLoaded", function() {
+        const closeBtn = document.querySelector('.close-btn');
+        const eventButton = document.getElementById('event-participation-button');
+
+        // 이벤트 위임으로 동적 요소 처리
+        document.addEventListener('click', function (event) {
+            if (event.target.classList.contains('place-item')) {
+                const placeId = event.target.getAttribute('data-id'); // 클릭한 매장의 ID 가져오기
+
+                if (placeId) {
+                    openPopup(placeId); // 팝업 열기 함수 호출
+                }
+            }
+        });
+
+        // 이벤트 참여 버튼 클릭 처리
+        eventButton.addEventListener('click', function () {
+            if (selectedPlaceId) {
+                location.href = `/eventCheck?placeId=${selectedPlaceId}`; // 참여 페이지로 이동
+            } else {
+                alert("먼저 매장을 선택하세요."); // 매장 선택이 필요함을 사용자에게 알림
+            }
+        });
+
+        closeBtn.addEventListener('click', function () {
+            popup.style.display = "none";
+        });
+
+        eventButton.addEventListener('click', function () {
+            if (selectedPlaceId) {
+                location.href = `/eventCheck?placeId=${selectedPlaceId}`;
+            }
+        });
+
+        window.addEventListener('click', function (event) {
+            if (event.target == popup) {
+                popup.style.display = "none";
+            }
+        });
+    });
+    function copyToClipboard(text) {
+        if (navigator.clipboard) {
+            // 클립보드 API 지원
+            navigator.clipboard.writeText(text)
+                .then(function() {
+                    alert('주소가 클립보드에 복사되었습니다: ' + text);
+                })
+                .catch(function(err) {
+                    console.error('복사 실패:', err);
+                    alert('주소 복사 중 문제가 발생했습니다.');
+                });
+        } else {
+            // 클립보드 API 미지원 브라우저 (대안 방법)
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                alert('주소가 클립보드에 복사되었습니다: ' + text);
+            } catch (err) {
+                console.error('복사 실패:', err);
+                alert('주소 복사 중 문제가 발생했습니다.');
+            }
+            document.body.removeChild(textarea);
+        }
+    }
+</script>
+{% endblock %}

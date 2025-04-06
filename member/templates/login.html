@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <div class="row mt-5">
+        <div class="col-12 text-center">
+            <h1>Login page</h1>
+        </div>
+    </div>
+</div>
+<div class="row mt-5">
+    <div class="col-12">
+        {{error}}
+    </div>
+</div>
+<div class="container">
+    <div class="row mt-5">
+        <div class="col-12 text-center">
+            <form method="POST" action="." id="myForm">
+                {% csrf_token %}
+                {% for field in form %}
+                <div class="form-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    <input
+                            type="{{ field.field.widget.input_type }}"
+                            class="form-control"
+                            id="{{ field.id_for_label }}"
+                            placeholder="{{ field.label }}"
+                            name="{{ field.name }}"
+                    />
+                </div>
+                {% if field.errors %}
+                <span style="color: red;">{{ field.errors }}</span>
+                {% endif %}
+                {% endfor %}
+
+                <button
+                        type="submit"
+                        class="btn btn-primary"
+                        id="joinForm_submit"
+                >
+                    Login
+                </button>
+                <button
+                        type="button"
+                        class="btn btn-info btn-primary btn-block"
+                        onclick="location.href='/member/register'"
+                >
+                    회원가입
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

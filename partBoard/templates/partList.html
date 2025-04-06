@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block head %}
+<!-- 부트스트랩 CSS, sidebar CSS, jQuery, jQuery UI (자동완성) -->
+<link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+<link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+<style>
+    .same-width {
+        width: 40% !important; /* 원하는 값으로 조정 */
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include "sidebar.html" %}
+
+        <div id="main-content" class="col pt-4">
+            <h2>참여자 관리</h2>
+
+            <form id="filter-form" method="get" class="mb-3" action="{% url 'part_list' %}">
+                <!-- 첫번째 행: 지역과 업체이름 검색 -->
+                <div class="d-flex align-items-center">
+                    <select name="region" id="region" class="form-control mr-4 same-width" style="width: auto;">
+                        <option value="전체 지역" {% if selected_region == "전체 지역" %}selected{% endif %}>전체 지역</option>
+                        {% for r in region_list %}
+                        <option value="{{ r }}" {% if r == selected_region %}selected{% endif %}>{{ r }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <input type="text" id="store_autocomplete" class="form-control mr-2 same-width" style="width: 60%;" placeholder="업체이름 검색">
+                    <input type="hidden" name="store" id="store" value="{{ selected_store }}">
+                </div>
+
+                <!-- 두번째 행: 검색 기능 -->
+                <div class="d-flex align-items-center mt-3">
+                    <div class="mr-3" style="flex: 0 0 25%;">
+                        <select name="search_field" id="search_field" class="form-control">
+                            <option value="name" {% if search_field == "name" %}selected{% endif %}>고객이름</option>
+                            <option value="num" {% if search_field == "num" %}selected{% endif %}>전화번호</option>
+                        </select>
+                    </div>
+                    <div class="mr-3" style="flex: 0 0 60%;">
+                        <input type="text" name="q" id="q" class="form-control" placeholder="검색어 입력" value="{{ q }}">
+                    </div>
+                    <div style="flex: 0 0 15%;">
+                        <button type="submit" class="btn btn-primary btn-block">검색</button>
+                    </div>
+                </div>
+
+                <!-- 세번째 행: 중복 참여 체크박스 -->
+                <div class="form-row mt-3">
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="dupl" id="dupl" value="true" {% if dupl == "true" %}checked{% endif %}>
+                            <label class="form-check-label" for="dupl">중복 참여</label>
+                        </div>
+                    </div>
+                    <div class="col d-flex align-items-center">
+                        <!-- 횟수 선택 -->
+                        <label for="participationCount" class="form-label mr-2">참여 횟수</label>
+                        <select id="participationCount" name="participation_count" class="form-control" style="width: auto;">
+                            <option value="" {% if participation_count == "" %}selected{% endif %}>전체</option>
+                            <option value="1" {% if participation_count == "1" %}selected{% endif %}>1회</option>
+                            <option value="2" {% if participation_count == "2" %}selected{% endif %}>2회</option>
+                            <option value="3" {% if participation_count == "3" %}selected{% endif %}>3회</option>
+                            <option value="4" {% if participation_count == "4" %}selected{% endif %}>4회</option>
+                            <option value="5" {% if participation_count == "5" %}selected{% endif %}>5회 이상</option>
+                        </select>
+                    </div>
+                </div>
+            </form>
+
+            <!-- 참여자 목록 테이블 -->
+            <table class="table table-bordered table-hover">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>고객이름</th>
+                    <th>전화번호</th>
+                    <th>업체이름</th>
+                    <th>중복 참여</th>
+                    <th>참여 날짜</th>
+                    <th>영수증 이미지</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for participant in participants %}
+                <tr data-name="{{ participant.name }}" data-num="{{ participant.num }}" style="cursor: pointer;" onclick="filterByRow(this);">
+                    <td>{{ participant.id }}</td>
+                    <td>{{ participant.name }}</td>
+                    <td>{{ participant.num }}</td>
+                    <td>
+                        {% for s in store_list %}
+                        {% if s.id == participant.placeId %}
+                        {{ s.place }}
+                        {% endif %}
+                        {% endfor %}
+                    </td>
+                    <td>{% if participant.dupl %}예{% else %}아니요{% endif %}</td>
+                    <td>{{ participant.date|date:"Y-m-d H:i" }}</td>
+                    <td>
+                        {% if participant.receiptImage %}
+                        <img src="{{ participant.receiptImage.url }}" alt="영수증" style="max-width: 100px;">
+                        {% else %}
+                        없음
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center">참여자가 없습니다.</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+
+        </div> <!-- main-content -->
+    </div> <!-- row -->
+</div> <!-- container-fluid -->
+
+<script>
+    $(function () {
+        // 지역 select 변경시 즉시 폼 제출
+        $("#region").change(function () {
+            $("#filter-form").submit();
+        });
+
+        // 중복 체크박스 변경시 즉시 폼 제출
+        $("#dupl").change(function () {
+            $("#filter-form").submit();
+        });
+
+        // 참여 횟수 선택 시 폼 제출
+        $("#participationCount").change(function () {
+            let form = $("#filter-form");
+            let selectedValue = $(this).val();
+
+            // "전체"가 선택된 경우에만 participation_count 초기화
+            if (selectedValue === "") {
+                form.find("input[name='participation_count']").val("");  // participation_count 초기화
+            }
+
+            form.submit();  // 폼 제출
+        });
+
+        // 매장(업체) 자동완성
+        $("#store_autocomplete").autocomplete({
+            source: "{% url 'autocomplete' %}",
+            minLength: 1,
+            select: function (event, ui) {
+                $("#store").val(ui.item.value);
+                $("#store_autocomplete").val(ui.item.label);
+                $("#filter-form").submit();
+                return false;
+            },
+            focus: function (event, ui) {
+                $("#store_autocomplete").val(ui.item.label);
+                return false;
+            }
+        });
+
+        // 매장 자동완성 필드 값 지워지면 hidden값 초기화
+        $("#store_autocomplete").on("keyup", function () {
+            if ($(this).val().length === 0) {
+                $("#store").val("all");
+            }
+        });
+    });
+
+    function filterByRow(row) {
+        // 클릭한 행에서 참여자의 이름과 전화번호를 각각 추출
+        var name = row.getAttribute("data-name");
+        var num = row.getAttribute("data-num");
+        // URL에 search_field를 "both"로 설정하고, name과 num을 각각 query parameter로 전달
+        var url = "{% url 'part_list' %}?search_field=both" +
+            "&name=" + encodeURIComponent(name) +
+            "&num=" + encodeURIComponent(num);
+        window.location.href = url;
+    }
+
+</script>
+{% endblock %}
