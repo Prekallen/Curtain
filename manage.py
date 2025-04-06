@@ -3,7 +3,7 @@
 import os
 import sys
 
-""" TEst12 """
+""" TEst12 3"""
 def main():
     """Run administrative tasks."""
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'curtain.settings')
