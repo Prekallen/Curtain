@@ -1,0 +1,72 @@
+/* sidebar.css */
+
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;  /* 가로 스크롤 숨기기 */
+}
+
+.container-fluid {
+    padding: 0;  /* 여분의 여백 제거 */
+    height: 100%;  /* 전체 높이 설정 */
+}
+
+.row.no-gutters {
+    margin-right: 0;
+    margin-left: 0;
+}
+
+.sidebar {
+    background-color: #f8f9fa;
+    padding: 0;  /* 여백 제거 */
+    height: 100vh;  /* 사이드바의 높이를 전체 높이로 설정 */
+}
+
+.sidebar .nav {
+    display: flex;
+    flex-direction: column;
+    padding-left: 0;
+    margin-bottom: 0;  /* 여백 제거 */
+}
+
+.sidebar .nav-item {
+    width: 100%;
+}
+
+.sidebar .nav-link {
+    padding: 10px 15px;
+    color: #000;
+    text-decoration: none;
+    border-bottom: 1px solid #dee2e6;
+    transition: background-color 0.3s ease;
+    font-size: 16px;  /* 폰트 크기 설정 */
+    line-height: 1.5;  /* 라인 높이 설정 */
+    display: flex;  /* 플렉스 박스 */
+    align-items: center;  /* 수직 중앙 정렬 */
+    font-family: Arial, sans-serif;  /* 폰트 설정 */
+    border: 1px solid #dee2e6;  /* 윤곽선 추가 */
+    border-radius: 4px;  /* 모서리 둥글게 */
+    margin: 5px 0;  /* 각 메뉴 항목 간 여백 추가 */
+}
+
+.sidebar .nav-link:hover {
+    background-color: #e9ecef;
+}
+
+.sidebar .nav-link.active {
+    background-color: #007bff;
+    color: #fff;
+}
+
+.sidebar.vh-100 {
+    height: 100vh;  /* 높이를 뷰포트 전체로 설정 */
+}
+
+.sidebar .mt-auto {
+    margin-top: auto;  /* 마지막 항목을 하단으로 배치 */
+}
+
+.sidebar .custom-margin {
+    margin-bottom: 4rem;  /* 하단 여백을 4rem로 설정 */
+}

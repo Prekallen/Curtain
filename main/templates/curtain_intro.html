@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% load mul %}
+{% block content %}
+<div class="container mt-5" style="background-color: rgba(0, 0, 0, 0.7); border-radius: 15px">
+    <div class="event-image text-center">
+        <h1 class="display-4 logo-container">
+            <a href="/" style="text-decoration: none;">
+                <img src="{{ MEDIA_URL }}WatchingYou.jpg" alt="지켜 보고 있다." class="responsive-logo">
+            </a>
+        </h1>
+        <p class="lead">
+            지켜 보고 있다. 아직 안 잔다....
+        </p>
+    </div>
+    <div class="event-button mt-4 text-center">
+        <button class="btn btn-primary btn-lg" onclick="location.href='/const_map'" style="background-color: rgba(188, 29, 33, 1);">시공 보러 가기</button>
+    </div>
+</div>
+{% endblock %}

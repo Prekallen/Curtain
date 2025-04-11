@@ -18,16 +18,16 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from member.views import manager
+
 
 urlpatterns = ([
     path('admin/', admin.site.urls),
     # path('crud/', include('myapp.urls')),
     path('', include('main.urls')),
-    path('member/', include('member.urls')),
+    path('manager/', include('manager.urls')),
     path('board/', include('placeBoard.urls')),
-    path('part/', include('partBoard.urls')),
-    path('manager/',manager),
+    path('part/', include('customer_board.urls')),
+
 ]
 # 다른 url 패턴들
 + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT))

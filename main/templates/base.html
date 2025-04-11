@@ -9,8 +9,8 @@
         <link rel="shortcut icon" href="{{ MEDIA_URL }}on.png" type="image/x-icon">
 
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-        <title>갓파더위크</title>
-        <meta name="description" content="갓파더위크 이벤트 참여.">
+        <title>커튼</title>
+        <meta name="description" content="커튼에 오신걸 환영 합니다.">
 
         <!-- 네이버맵 관련 -->
         <script
@@ -47,31 +47,31 @@
 
         <!-- CSS -->
         <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
-        <link rel="stylesheet" href="{% static 'css/godfather.css' %}">
+        <link rel="stylesheet" href="{% static 'css/curtain.css' %}">
         <!-- 구조화된 데이터 추가 -->
         <script type="application/ld+json">
             {
                 "@context": "https://schema.org",
                 "@type": "Website",
-                "name": "갓파더위크",
-                "url": "https://갓파더위크.kr",
-                "description": "갓파더위크 이벤트 참여."
+                "name": "커튼",
+                "url": "https://커튼.kr",
+                "description": "커튼에 오신걸 환영 합니다."
 
             }
         </script>
         <!-- Open Graph & Twitter Card 메타 태그 -->
-        <meta property="og:title" content="갓파더위크">
-        <meta property="og:description" content="갓파더위크 이벤트 참여.">
+        <meta property="og:title" content="커튼">
+        <meta property="og:description" content="커튼에 오신걸 환영합니다.">
         <meta property="og:image" content="/media/on.png">
-        <meta property="og:url" content="https://갓파더위크.kr">
+        <meta property="og:url" content="https://커튼.kr">
 
         <meta name="twitter:card" content="summary_large_image">
-        <meta name="twitter:title" content="갓파더위크">
-        <meta name="twitter:description" content="갓파더위크 이벤트 참여.">
+        <meta name="twitter:title" content="커튼">
+        <meta name="twitter:description" content="커튼에 오신걸 환영합니다.">
         <meta name="twitter:image" content="/media/on.png">
         {% endblock %}
     </head>
-    <body class="{% if admin_page %}{% else %}bg-black text-light{% endif %}">
+    <body class="{% if manager_page %}{% else %}bg-black text-light{% endif %}">
         <!-- Django messages를 SweetAlert2 팝업으로 표시 -->
         <script>
             {% if messages %}

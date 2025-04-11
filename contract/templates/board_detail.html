@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="form-group">
+            <label for="place">업체명</label>
+            <input
+                    type="text"
+                    class="form-control"
+                    id="place"
+                    value="{{ board.place }}"
+                    readonly
+            />
+            <label for="placeNum">전화번호</label>
+            <input
+                    type="text"
+                    class="form-control"
+                    id="placeNum"
+                    value="{{ board.placeNum }}"
+                    readonly
+            />
+            <label for="address">주소</label>
+            <textarea id="address" class="form-control" readonly>{{ board.address }}</textarea>
+            <label for="area">지역</label>
+            <input
+                    type="text"
+                    class="form-control"
+                    id="area"
+                    value="{{ board.area }}"
+                    readonly
+            />
+            <label for="placeImage">업체 사진</label>
+            {% if board.placeImage %}
+            <br>
+            <img src="{{ board.placeImage.url }}"  width="300">
+            <br>
+            {% else %}
+            {% endif %}
+            <input
+                    type="text"
+                    class="form-control"
+                    id="placeImage"
+                    value="{{ board.placeImage }}"
+                    readonly
+            />
+        </div>
+        <button
+                type="button"
+                class="btn btn-primary"
+                onclick="location.href='/board/update/{{board.id}}/'"
+        >
+            변경
+        </button>
+        <button
+                type="button"
+                class="btn btn-info btn-primary btn-block"
+                onclick="location.href='{% if page_number %}/board/list/?p={{ page_number }}{% else %}/board/list/{% endif %}'"
+        >
+            매장 리스트
+        </button>
+    </div>
+</div>
+{% endblock %}

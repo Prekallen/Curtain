@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mt-5">
+    <div class="col-12">
+        <form method="POST" action="." enctype="multipart/form-data" id="uploadForm">
+            {% csrf_token %}
+            <div class="form-group">
+                <input type="hidden" name="id" value="{{board.id}}">
+                <label for="place">업체명</label>
+                <input
+                        type="text"
+                        class="form-control"
+                        id="place"
+                        name="place"
+                        value="{{ board.place }}"
+                />
+                <label for="placeNum">전화번호</label>
+                <input
+                        type="text"
+                        class="form-control"
+                        id="placeNum"
+                        name="placeNum"
+                        value="{{ board.placeNum }}"
+                        oninput="this.value=this.value.replace(/[^0-9]/g,'');"
+                />
+                <label for="address">주소</label>
+                <textarea
+                        id="address"
+                        name="address"
+                        class="form-control"
+                >{{ board.address }}</textarea>
+                <label for="area">지역</label>
+                <input
+                        type="text"
+                        class="form-control"
+                        id="area"
+                        name="area"
+                        value="{{ board.area }}"
+                />
+                <label for="placeImage">업체 사진</label>
+                {% if board.placeImage %}
+                <br>
+                <img src="{{ board.placeImage.url }}" id="preview"  width="300" alt="이미지 미리보기" style="max-width: 300px; ">
+                <br>
+                {% else %}
+                {% endif %}
+                <input
+                        type="file"
+                        class="form-control"
+                        id="placeImage"
+                        name="placeImage"
+                />
+            </div>
+            <button type="submit" class="btn btn-primary">등록</button>
+            <button
+                    type="button"
+                    class="btn btn-info btn-primary btn-block"
+                    onclick="location.href='/board/list/'"
+            >
+                매장 리스트
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.getElementById('placeImage').addEventListener('change', function(event) {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('preview');
+                preview.src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+</script>
+{% endblock %}

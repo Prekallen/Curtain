@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% load static %}
+{% block head %}
+<link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+<link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid h-100">
+    <div class="row h-100 no-gutters">
+        <!-- 사이드바 포함 -->
+        {% include "sidebar.html" %}
+
+        <!-- 메인 콘텐츠 영역 -->
+        <div id="main-content" class="col">
+            <main class="container-fluid">
+                <div class="row mt-5 flex-grow-1">
+                    <div class="col-12">
+                        <table class="table table-striped table-hover">
+                            <thead class="thead-dark">
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">업체명</th>
+                                <th scope="col">작성자</th>
+                                <th scope="col">작성일</th>
+                                <th scope="col">최종 수정일</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for board in boards %}
+                            <tr onclick="location.href='/board/detail/{{board.id}}'">
+                                <th scope="row">{{ board.id }}</th>
+                                <td>{{ board.place }}</td>
+                                <td>{{ board.writer }}</td>
+                                <td>{{ board.created_at }}</td>
+                                <td>{{ board.updated_at }}</td>
+                            </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 검색 기능 -->
+                <form method="get" action="" class="my-3">
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <select name="search_type" class="form-control">
+                                <option value="place" {% if request.GET.search_type == 'place' %}selected{% endif %}>업체명</option>
+                                <option value="region" {% if request.GET.search_type == 'region' %}selected{% endif %}>지역</option>
+                            </select>
+                        </div>
+                        <input type="text" name="q" class="form-control" placeholder="검색" value="{{ request.GET.q }}">
+                        <button type="submit" class="btn btn-secondary">검색</button>
+                    </div>
+                </form>
+
+                <!-- 페이지네이션 -->
+                <nav aria-label="Page navigation" class="mt-auto">
+                    <ul class="pagination justify-content-center">
+                        {% if has_previous_group %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if query_string %}{{ query_string }}&{% endif %}p={{ previous_group_page }}" aria-label="Previous Group">
+                                <span aria-hidden="true">&laquo; 이전</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% for num in page_numbers %}
+                        {% if boards.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if query_string %}{{ query_string }}&{% endif %}p={{ num }}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                        {% endfor %}
+
+                        {% if has_next_group %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if query_string %}{{ query_string }}&{% endif %}p={{ next_group_page }}" aria-label="Next Group">
+                                <span a-hidden="true">다음 &raquo;</span>
+                            </a>aria-hidden="true">다음 &raquo;</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+
+                <div class="row mt-2">
+                    <div class="col-12">
+                        <button class="btn btn-primary" onclick="location.href='/board/write/'">등록</button>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</div>
+{% endblock %}

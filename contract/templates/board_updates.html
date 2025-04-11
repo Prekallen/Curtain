@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mt-5">
+    <div class="col-12">
+        <form method="POST" action="." enctype="multipart/form-data">
+            {% csrf_token %}
+            {% for field in form %}
+            <div class="form-group">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {% if field.name == 'address' %}
+                <textarea
+                        class="form-control"
+                        name="{{field.name}}"
+                        placeholder="{{ field.label }}"
+                >{{field.value}}</textarea>
+
+                {% elif field.name == 'placeNum' %}
+                <input
+                        type="{{ field.field.widget.input_type }}"
+                        class="form-control"
+                        id="{{ field.id_for_label }}"
+                        placeholder="{{ field.label }}"
+                        name="{{ field.name }}"
+                        oninput="this.value=this.value.replace(/[^0-9]/g,'');"
+                        value="{{field.value}}"
+                />
+
+                {% else %}
+                <input
+                        type="{{ field.field.widget.input_type }}"
+                        class="form-control"
+                        id="{{ field.id_for_label }}"
+                        placeholder="{{ field.label }}"
+                        name="{{ field.name }}"
+                        value="{{field.value}}"
+                />
+                {% endif %}
+            </div>
+            {% if field.errors %}
+            <span style="color: red;">{{ field.errors }}</span>
+            {% endif %}
+            {% endfor %}
+            <button type="submit" class="btn btn-primary">submit</button>
+            <button
+                    type="button"
+                    class="btn btn-info btn-primary btn-block"
+                    onclick="location.href='/board/list/'"
+            >Lists
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
