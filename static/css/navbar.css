@@ -1,0 +1,58 @@
+#navbar {
+    border-bottom: 1px solid #ddd;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    height: 60px; /* 네비게이션 바의 높이를 설정 */
+    display: flex;
+    align-items: center; /* 수직 중앙 정렬 */
+    padding: 0 20px; /* 좌우 여백 설정 */
+    position: relative;
+    z-index: 1050;
+}
+
+/* 작은 화면에서만 absolute positioning 적용 */
+@media (max-width: 768px) { /* 태블릿 및 모바일용 */
+    .navbar-collapse {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background-color: white; /* 배경을 흰색으로 설정 */
+        z-index: 1100; /* 더 높은 값으로 설정 */
+        width: 100%;
+    }
+    #navbar {
+        height: 50px; /* 작은 화면에서 높이 조정 */
+        padding: 0 15px;
+    }
+    .nav-link {
+        font-size: 14px; /* 폰트 크기 줄이기 */
+        line-height: 50px; /* 라인 높이 조정 */
+    }
+}
+
+/* 큰 화면에서는 Bootstrap의 기본 레이아웃 사용 */
+@media (min-width: 769px) {
+    .navbar-collapse {
+        position: static; /* 기본 위치 설정 */
+        top: auto;
+        left: auto;
+        background-color: transparent; /* 배경 투명하게 */
+        z-index: auto;
+        width: auto;
+        display: flex !important; /* flexbox 활성화 (Bootstrap 기본) */
+        align-items: center; /* 수직 중앙 정렬 */
+    }
+    .navbar-nav {
+        display: flex; /* 내부 링크들을 가로로 배치 */
+    }
+}
+
+.navbar-brand {
+    font-weight: bold;
+    font-size: 18px; /* 로고 크기 조정 */
+}
+
+.nav-link {
+    margin-right: 10px;
+    font-size: 16px; /* 폰트 크기 설정 */
+    line-height: 60px; /* 높이에 맞춘 라인 높이 */
+}

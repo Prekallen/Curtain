@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <h2>방문 견적 신청 - 지역 선택 (1/4)</h2>
+    <form method="post" action="{% url 'request_quote_flow_step1' %}">
+        {% csrf_token %}
+        {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+        <div class="form-group">
+            {{ region_level1_form.region_level1.label_tag }}
+            {{ region_level1_form.region_level1 }}
+        </div>
+        <button type="submit" class="btn btn-primary">다음</button>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        $('#id_region_level1').change(function() {
+            var region_level1 = $(this).val();
+            if (region_level1) {
+                $.ajax({
+                    url: '{% url "get_region_level2" %}',
+                    data: {'region_level1': region_level1},
+                    dataType: 'json',
+                    success: function(data) {
+                        var options = '<option value="">선택하세요</option>';
+                        $.each(data.regions, function(i, region) {
+                            options += '<option value="' + region + '">' + region + '</option>';
+                        });
+                        $('#id_region_level2').html(options);
+                    }
+                });
+            } else {
+                $('#id_region_level2').html('<option value="">선택하세요</option>');
+                $('#id_region_level3').html('<option value="">선택하세요</option>');
+            }
+        });
+    });
+</script>
+{% endblock %}

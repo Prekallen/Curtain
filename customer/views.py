@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.db.models import Q
-from main.models import Customer
+from customer.models import Customer
 from contract.models import Contract
 from django.db.models import Count
 

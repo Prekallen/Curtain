@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <h2>방문 견적 신청 - 연락처 정보</h2>
+    <p>입력하신 지역: {{ request.session.region_level1 }} {{ request.session.region_level2 }} {{ request.session.region_level3 }} {{ request.session.detailed_address }}</p>
+    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#contactInfoModal">
+        이름 및 연락처 입력
+    </button>
+
+    <div class="modal fade" id="contactInfoModal" tabindex="-1" role="dialog" aria-labelledby="contactInfoModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <form method="post" action="{% url 'submit_request_quote' %}">
+                    {% csrf_token %}
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="contactInfoModalLabel">이름 및 연락처 입력</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        {% if contact_info_form.errors %}
+                        <div class="alert alert-danger">입력하신 정보를 확인해주세요.</div>
+                        {% endif %}
+                        <div class="form-group">
+                            {{ contact_info_form.name.label_tag }}
+                            {{ contact_info_form.name }}
+                        </div>
+                        <div class="form-group">
+                            {{ contact_info_form.phone.label_tag }}
+                            {{ contact_info_form.phone }}
+                        </div>
+                        <div class="form-group form-check">
+                            {{ contact_info_form.agree_personal_info }}
+                            {{ contact_info_form.agree_personal_info.label_tag }}
+                            <a href="{% url 'personal_info_policy' %}" target="_blank">개인정보 제공</a>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">취소</button>
+                        <button type="submit" class="btn btn-primary">신청 완료</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('#contactInfoModal form').submit(function(event) {
+            event.preventDefault(); // 기본 폼 제출 동작 방지
+            var form = $(this);
+            $.ajax({
+                type: form.attr('method'),
+                url: form.attr('action'),
+                data: form.serialize(),
+                success: function(response) {
+                    // 서버에서 성공적인 응답을 받으면 모달을 닫음
+                    $('#contactInfoModal').modal('hide');
+                    // 필요하다면 추가적인 성공 처리 (예: 메시지 표시)
+                    alert('신청이 완료되었습니다!');
+                },
+                error: function(error) {
+                    // 서버에서 에러 응답을 받으면 에러 처리
+                    alert('신청에 실패했습니다. 다시 시도해주세요.');
+                    // 필요하다면 에러 메시지 표시
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

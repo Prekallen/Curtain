@@ -1,34 +1,19 @@
-"""
-URL configuration for eqr project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.1/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-
 
 urlpatterns = ([
     path('admin/', admin.site.urls),
     # path('crud/', include('myapp.urls')),
     path('', include('main.urls')),
     path('manager/', include('manager.urls')),
-    path('board/', include('placeBoard.urls')),
-    path('part/', include('customer_board.urls')),
-
-]
+    path('const/', include('construction.urls')),
+    path('contract/', include('contract.urls')),
+    path('customer/', include('customer.urls')),
+])
 # 다른 url 패턴들
-+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT))
-
+# 이미지 URL 설정
+# static 파일 서빙 추가
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

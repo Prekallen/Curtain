@@ -1,5 +1,6 @@
 import requests
 from django.core.paginator import Paginator
+from django.contrib import messages
 from django.http import Http404, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db import transaction
@@ -7,7 +8,7 @@ from django.db import transaction
 
 from manager.models import Manager
 from .forms import ConstructionForm, ConstItemFormSet, ItemImageFormSet
-from .models import Construction
+from .models import Construction, ConstItem, ItemImage
 import logging
 
 logger = logging.getLogger(__name__)
@@ -20,52 +21,46 @@ def session_check(request):
 
 # 시공 목록
 def construction_list(request):
-    search_type = request.GET.get('search_type', 'place')
+    search_type = request.GET.get('search_type', 'address')
     query = request.GET.get('q')
+
+    all_consts = Construction.objects.all().order_by('-id')
 
     if query:
         if search_type == 'address':
-            all_boards = Construction.objects.filter(place__icontains=query)
+            all_consts = all_consts.filter(address__icontains=query)
         elif search_type == 'housing_type':
-            all_boards = Construction.objects.filter(area__icontains=query)
-    else:
-        all_boards = Construction.objects.all().order_by('-id')
+            all_consts = all_consts.filter(housing_type__icontains=query)
+        elif search_type == 'item_type':
+            all_consts = all_consts.filter(item_type__icontains=query)
 
-    # 변수명을 all_boards 로 바꿔주었다.
-    page        = int(request.GET.get('p', 1))
-    # p라는 값으로 받을거고, 없으면 첫번째 페이지로
-    paginator   = Paginator(all_boards, 10)
-    # Paginator 함수를 적용하는데, 첫번째 인자는 위에 변수인 전체 오브젝트, 2번째 인자는
-    # 한 페이지당 오브젝트 10개씩 나오게 설정
-    boards      = paginator.get_page(page)
+    page = int(request.GET.get('p', 1))
+    paginator = Paginator(all_consts, 10)
+    consts = paginator.get_page(page)
 
-    # 현재 페이지 번호를 정수형으로 변환
-    current_page = boards.number
-
-    # 총 페이지 수
+    current_page = consts.number
     total_pages = paginator.num_pages
-
-    # 페이지 그룹 계산
     page_group = (current_page - 1) // 10
     start_page = page_group * 10 + 1
     end_page = min(start_page + 9, total_pages)
     page_numbers = range(start_page, end_page + 1)
 
-    # 기존의 GET 파라미터에서 'page, p'를 제거하여 query_string 생성
     query_params = request.GET.copy()
     query_params.pop('page', None)
     query_params.pop('p', None)
     query_string = query_params.urlencode()
 
     context = {
-        'admin_page': True,  # 관리자 페이지일 경우 True로 설정
-        'boards': boards,
+        'admin_page': True,
+        'consts': consts,
         'page_numbers': page_numbers,
         'has_previous_group': start_page > 1,
         'has_next_group': end_page < total_pages,
         'previous_group_page': start_page - 1,
         'next_group_page': end_page + 1,
         'query_string': query_string,
+        'search_type': search_type,
+        'query': query,
     }
     return render(request, 'construction_list.html', context)
 
@@ -73,56 +68,60 @@ def construction_list(request):
 def register_construction(request):
     session_check(request)
 
-    if request.method == "POST":
-        construction_form = ConstructionForm(request.POST, request.FILES)
-        const_item_formset = ConstItemFormSet(prefix='const_items')
-        item_image_formset = ItemImageFormSet(prefix='item_images')
+    if request.method == 'POST':
+        form = ConstructionForm(request.POST)
+        const_item_formset = ConstItemFormSet(request.POST, request.FILES, prefix='items')
 
-        if construction_form.is_valid() and const_item_formset.is_valid() and item_image_formset.is_valid():
-            # form의 모든 validators 호출 유효성 검증 수행
-            user_id = request.session.get('user')
-            member = Manager.objects.get(pk=user_id)
+        image_formsets = []
+        image_formsets_valid = True
+        total_item_forms = int(request.POST.get('items-TOTAL_FORMS', 0))
 
-            construction = construction_form.save(commit=False)  # 폼 데이터를 임시 저장
-            construction.manager = member.id
-            construction.writer = member.name
-            _save_board_with_lat_long(construction, construction.address)
+        for i in range(total_item_forms):
+            image_formset = ItemImageFormSet(
+                request.POST,
+                request.FILES,
+                prefix=f'images-{i}'
+            )
+            image_formsets.append(image_formset)
+            if not image_formset.is_valid():
+                image_formsets_valid = False
 
-            # 트랜잭션 내에서 데이터 저장
-            try:
-                with transaction.atomic():
-                    construction.save()
+        if form.is_valid() and const_item_formset.is_valid() and image_formsets_valid:
+            with transaction.atomic():
+                user_id = request.session.get('user')
+                member = Manager.objects.get(pk=user_id)
+                construction = form.save(commit=False)
+                construction.manager = member
+                construction.writer = member.name
+                _save_board_with_lat_long(construction, construction.address)
+                construction.save()
 
                 const_items = const_item_formset.save(commit=False)
-                for item in const_items:
-                    item.const_id = construction
-                    item.save()
+                for idx, const_item in enumerate(const_items):
+                    const_item.construction = construction
+                    const_item.save()
 
-                for item_form in const_item_formset:
-                    if item_form.cleaned_data and not item_form.cleaned_data.get('DELETE'):
-                        const_item = item_form.save()
-                        image_formset = ItemImageFormSet(request.POST, request.FILES, prefix=f'item_images-{const_item_formset.forms.index(item_form)}')
-                        if image_formset.is_valid():
-                            images = image_formset.save(commit=False)
-                            for image in images:
-                                image.item_id = const_item
-                                image.save()
-                        else:
-                            logger.error(f"ItemImageFormSet 오류: {image_formset.errors}")
+                    image_formset = image_formsets[idx]
+                    images = image_formset.save(commit=False)
+                    for img in images:
+                        img.item = const_item
+                        img.save()
 
-            return redirect('/board/list/?p=1')
-        else:
-            logger.error(f"ConstructionForm 오류: {construction_form.errors}")
-            logger.error(f"ConstItemFormSet 오류: {const_item_formset.errors}")
-            logger.error(f"ItemImageFormSet 오류: {item_image_formset.errors}")
+            return redirect('const/list')
+    else:
+        form = ConstructionForm()
+        const_item_formset = ConstItemFormSet(queryset=ConstItem.objects.none(), prefix='items')
+        image_formsets = [ItemImageFormSet(queryset=ItemImage.objects.none(), prefix=f'images-{i}')
+                          for i in range(len(const_item_formset.forms))]
 
-    context = {
-        'admin_page': True,
-        'form': construction_form,
+    paired_forms = zip(const_item_formset.forms, image_formsets)
+    return render(request, 'register_construction.html', {
+        'form': form,
         'const_item_formset': const_item_formset,
-        'item_image_formset': item_image_formset,
-    }
-    return render(request, 'register_construction.html', context)
+        'image_formsets': image_formsets,
+        'paired_forms': paired_forms,
+    })
+
 
  # 시공 상세
 def construction_detail(request, pk):
@@ -131,8 +130,8 @@ def construction_detail(request, pk):
         'admin_page': True,  # 관리자 페이지일 경우 True로 설정
     }
     try:
-        board = Construction.objects.get(pk=pk)
-        context['board'] = board
+        const = Construction.objects.get(pk=pk)
+        context['const'] = const
     except Construction.DoesNotExist:
         raise Http404('시공 게시물을 찾을 수 없습니다')
 
@@ -154,49 +153,73 @@ def construction_detail(request, pk):
 
     return render(request, 'construction_detail.html', context)
 
-def board_update(request, pk):
+def construction_update(request, pk):
     session_check(request)
     instance = get_object_or_404(Construction, pk=pk)
-    try:
-        pre_board = Construction.objects.get(pk=pk)
-    except Construction.DoesNotExist:
-        raise Http404('게시글을 찾을 수 없습니다')
 
     if request.method == "POST":
         form = ConstructionForm(request.POST, request.FILES, instance=instance)
         if form.is_valid():
-            board = form.save(commit=False)
+            construction = form.save(commit=False)
             user_id = request.session.get('user')
             manager = Manager.objects.get(pk=user_id)
-            board.manager = user_id
-            board.writer = manager.name
+            construction.manager = manager
+            construction.writer = manager.name
+            _save_board_with_lat_long(construction, construction.address)
 
-            # 트랜잭션 내에서 데이터 저장
             try:
                 with transaction.atomic():
-                    _save_board_with_lat_long(board, board.address)
+                    construction.save()
+                messages.success(request, "시공 정보가 성공적으로 수정되었습니다.")
+                return redirect('construction_list')
             except Exception as e:
-                logger.error(f"에러 발생: {e}")
-                raise
-
-            # 리스트 페이지의 모든 게시물을 가져오고 페이지네이터로 나눕니다.
-            all_posts = Construction.objects.all().order_by('-id')
-            paginator = Paginator(all_posts, 10)  # 페이지당 10개의 게시물
-            page_number = None
-            for page in paginator.page_range:
-                if instance in paginator.page(page).object_list:
-                    page_number = page
-                    break
-            if page_number:
-                return redirect(f'/construction/list/?p={page_number}')
+                logger.error(f"시공 정보 수정 중 오류 발생: {e}")
+                messages.error(request, f"시공 정보 수정 중 오류가 발생했습니다: {e}")
+                return redirect('construction_update', pk=pk)
         else:
-            # 폼 오류 처리
-            print('form_error : ' + str(form.errors))  # 폼의 오류 메시지 출력
+            logger.error(f"ConstructionForm 수정 오류: {form.errors}")
+            messages.error(request, "입력하신 정보가 유효하지 않습니다. 다시 확인해주세요.")
 
     else:
         form = ConstructionForm(instance=instance)
 
-    return render(request, 'construction_update.html', {'form':form,'board':pre_board,'admin_page':True})
+    return render(request, 'construction_update.html', {'form':form,'construction':instance,'admin_page':True})
+
+def construction_delete(request, pk):
+    session_check(request)
+    construction = get_object_or_404(Construction, pk=pk)
+
+    if request.method == "POST":
+        try:
+            with transaction.atomic():
+                # 관련된 ConstItem 및 ItemImage 먼저 삭제 (on_delete=CASCADE 설정되어 있다면 생략 가능)
+                ConstItem.objects.filter(const_id=construction).delete()
+                construction.delete()
+            messages.success(request, f"시공 ID {pk}가 성공적으로 삭제되었습니다.")
+            return redirect('construction_list')
+        except Exception as e:
+            messages.error(request, f"시공 삭제 중 오류가 발생했습니다: {e}")
+            return redirect('construction_detail', pk=pk)  # 또는 목록 페이지로 리다이렉트
+    else:
+        # POST 요청이 아니면 삭제를 수행하지 않고 상세 페이지로 리다이렉트하거나 오류 메시지를 표시
+        messages.error(request, "잘못된 접근입니다.")
+        return redirect('construction_detail', pk=pk)
+
+def bulk_delete_construction(request):
+    session_check(request)
+    if request.method == "POST":
+        construction_ids = request.POST.getlist('construction_ids')
+        if construction_ids:
+            try:
+                with transaction.atomic():
+                    # on_delete=models.CASCADE 설정에 따라 ConstItem과 ItemImage도 함께 삭제됩니다.
+                    Construction.objects.filter(id__in=construction_ids).delete()
+                messages.success(request, f"{len(construction_ids)}개의 시공 정보를 성공적으로 삭제했습니다.")
+            except Exception as e:
+                messages.error(request, f"시공 정보 삭제 중 오류가 발생했습니다: {e}")
+        else:
+            messages.warning(request, "삭제할 시공 정보를 선택해주세요.")
+    return redirect('construction_list')
 
 def upload_image_view(request):
     if request.method == 'POST' and request.FILES.get('placeImage'):

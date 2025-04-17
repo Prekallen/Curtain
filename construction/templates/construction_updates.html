@@ -3,6 +3,7 @@
 {% block content %}
 <div class="row mt-5">
     <div class="col-12">
+        <h1>시공 정보 수정</h1>
         <form method="POST" action="." enctype="multipart/form-data">
             {% csrf_token %}
             {% for field in form %}
@@ -11,44 +12,48 @@
                 {% if field.name == 'address' %}
                 <textarea
                         class="form-control"
-                        name="{{field.name}}"
+                        name="{{ field.name }}"
                         placeholder="{{ field.label }}"
-                >{{field.value}}</textarea>
+                >{{ field.value|default:construction.address }}</textarea>
 
-                {% elif field.name == 'placeNum' %}
+                {% elif field.name == 'housing_type' %}
                 <input
                         type="{{ field.field.widget.input_type }}"
                         class="form-control"
                         id="{{ field.id_for_label }}"
                         placeholder="{{ field.label }}"
                         name="{{ field.name }}"
-                        oninput="this.value=this.value.replace(/[^0-9]/g,'');"
-                        value="{{field.value}}"
+                        value="{{ field.value|default:construction.housing_type }}"
                 />
 
-                {% else %}
+                {% elif field.name == 'writer' %}
                 <input
                         type="{{ field.field.widget.input_type }}"
                         class="form-control"
                         id="{{ field.id_for_label }}"
                         placeholder="{{ field.label }}"
                         name="{{ field.name }}"
-                        value="{{field.value}}"
+                        value="{{ field.value|default:construction.writer }}"
+                        readonly  {# 작성자는 수정 불가하도록 readonly 처리 #}
                 />
-                {% endif %}
-            </div>
-            {% if field.errors %}
-            <span style="color: red;">{{ field.errors }}</span>
-            {% endif %}
-            {% endfor %}
-            <button type="submit" class="btn btn-primary">submit</button>
-            <button
-                    type="button"
-                    class="btn btn-info btn-primary btn-block"
-                    onclick="location.href='/board/list/'"
-            >Lists
-            </button>
-        </form>
-    </div>
-</div>
-{% endblock %}
+
+                {% elif field.name == 'latitude' %}
+                <input
+                        type="{{ field.field.widget.input_type }}"
+                        class="form-control"
+                        id="{{ field.id_for_label }}"
+                        placeholder="{{ field.label }}"
+                        name="{{ field.name }}"
+                        value="{{ field.value|default:construction.latitude }}"
+                        readonly  {# 위도는 수정 불가하도록 readonly 처리 #}
+                />
+
+                {% elif field.name == 'longitude' %}
+                <input
+                        type="{{ field.field.widget.input_type }}"
+                        class="form-control"
+                        id="{{ field.id_for_label }}"
+                        placeholder="{{ field.label }}"
+                        name="{{ field.name }}"
+                        value="{{ field.value|default:construction.longitude }}"
+                        readonly  {# 경도는 수정

@@ -1,206 +1,84 @@
-{% extends "base.html" %}
-{% block content %}
-<style>
-    .container {
-        margin: 0 !important;
-        padding: 0 !important;
-        max-width: 100% !important;
-    }
-    #map {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        z-index: 0; /* 지도가 다른 요소 뒤쪽에 위치하도록 */
-    }
-    #region-buttons {
-        position: fixed;
-        bottom: 20px;
-        left: 20px;
-        z-index: 1000;
-        background-color: rgba(255, 255, 255, 0.8); /* 배경 투명도 */
-        padding: 10px;
-        border-radius: 5px;
-        max-height: 80vh;
-        overflow-y: auto;
-    }
-    #region-buttons .region-button {
-        display: block;
-        width: 100%; /* 컨테이너 전체 너비 사용 */
-        margin-bottom: 10px; /* 버튼 간의 간격 */
-        padding: 8px 12px;
-        font-size: 14px;
-        background-color: #008CBA;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-    #region-buttons .region-button:last-child {
-        margin-bottom : 0;
-    }
-    /* 모바일에서 여분을 없애기 위한 스타일 */
-    @media (max-width: 768px) {
-        .container-fluid {
-            padding: 0 !important;
-        }
-    }
-</style>
-<div class="container-fluid h-100 no-gutters">
-    <div id="map"></div>
-    <div id="region-buttons">
-        <button class="region-button" onclick="returnToUserLocation()">내 위치</button>
-        {% if unique_areas is not none %}
-        <button class="region-button" onclick="showRegion('all')">전체</button>
-        {% endif %}
-        {% for area in unique_areas %}
-        <button class="region-button" onclick="showRegion('{{ area }}')">{{ area }}</button>
-        {% endfor %}
-    </div>
-    <button class="fixed-low-button" onclick="location.href='/places'">이벤트 매장 둘러보기</button>
-</div>
-<script>
-    var places = {{ places_json|safe }};
-    var map;
-    var infowindow;
-    var currentUserLocation;
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        {% load static %}
+        <meta charset="UTF-8" />
+        <!-- Favicon -->
+        <link rel="icon" href="{% static 'images/favicon.ico' %}" type="image/x-icon">
+        <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}" type="image/x-icon">
 
-    function isMobile() {
-        return /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    }
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <title>커튼</title>
+        <meta name="description" content="커튼에 오신걸 환영 합니다.">
 
-    function getUserPosition(callback) {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                function(position) {
-                    var userPos = new naver.maps.LatLng(position.coords.latitude, position.coords.longitude);
-                    callback(userPos);
-                },
-                function(error) {
-                    console.error("Geolocation error: ", error);
-                    var defaultPos = new naver.maps.LatLng(37.5665, 126.9780); // 서울 기본 좌표
-                    callback(defaultPos);
-                },
-                {
-                    enableHighAccuracy: true,
-                    timeout: 10000
-                }
-            );
-        } else {
-            var defaultPos = new naver.maps.LatLng(37.5665, 126.9780);
-            callback(defaultPos);
-        }
-    }
+        <!-- 네이버맵 관련 -->
+        <script
+                src="https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId={{ NAVER_MAP_CLIENT_ID }}"
+                defer>
+        </script>
+        <script
+                src="https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId={{ NAVER_MAP_CLIENT_ID }}&submodules=geocoder"
+                defer>
+        </script>
 
-    function initMap(center) {
-        var zoomLevel = isMobile() ? 11 : 13; // 모바일 기기일 때는 줌 레벨 11, 데스크탑일 때는 줌 레벨 13로 설정
-        map = new naver.maps.Map("map", {
-            center: center,
-            zoom: zoomLevel
-        });
+        <!-- pretendard font -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
 
-        infowindow = new naver.maps.InfoWindow({ anchorSkew: true });
-        new naver.maps.Marker({
-            position: center,
-            map: map,
-            title: "현재 위치"
-        });
+        <!-- Bootstrap JS -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
-        places.forEach(function(place) {
-            var markerPos = new naver.maps.LatLng(place.lat, place.lng);
-            var marker = new naver.maps.Marker({
-                position: markerPos,
-                map: map,
-                title: place.name
-            });
-            naver.maps.Event.addListener(marker, 'click', function(e) {
-                var content = '<div style="padding:10px; font-size:14px;">' +
-                    '<strong>' + marker.getTitle() + '</strong>' +
-                    '</div>';
-                infowindow.setContent(content);
-                infowindow.open(map, marker);
-            });
-        });
+        <!-- SweetAlert2 -->
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-        if (initialLoad) {
-            initialLoad = false;
-            showRegion('all');
-        }
-    }
+        <!-- CSS -->
+        <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+        <link rel="stylesheet" href="{% static 'css/curtain.css' %}">
+        <!-- 구조화된 데이터 추가 -->
+        <script type="application/ld+json">
+            {
+                "@context": "https://schema.org",
+                "@type": "Website",
+                "name": "커튼",
+                "url": "https://커튼.kr",
+                "description": "커튼에 오신걸 환영 합니다."
 
-    function calculateCenter(points) {
-        var latSum = 0;
-        var lngSum = 0;
-        points.forEach(function(point) {
-            latSum += point.lat();
-            lngSum += point.lng();
-        });
-        return new naver.maps.LatLng(latSum / points.length, lngSum / points.length);
-    }
-
-    window.showRegion = function(region) {
-        var points = [];
-        var targetZoomLevel = isMobile() ? 12 : 15; // 기본 줌 레벨에서 1단계 줌아웃
-        var mobileZoomLevel = 10; // 모바일 기기에서 10단계 줌아웃
-
-        if (region.trim().toLowerCase() === 'all') {
-            places.forEach(function(place) {
-                var pos = new naver.maps.LatLng(place.lat, place.lng);
-                points.push(pos);
-            });
-            map.setZoom(mobileZoomLevel); // 전체 보기 시 지정한 줌 레벨로 설정
-        } else {
-            places.forEach(function(place) {
-                if (place.area.trim().toLowerCase().includes(region.trim().toLowerCase())) {
-                    var pos = new naver.maps.LatLng(place.lat, place.lng);
-                    points.push(pos);
-                }
-            });
-
-            if (isMobile()) {
-                map.setZoom(targetZoomLevel - 1); // 모바일 기기에서 1단계 줌아웃
-            } else {
-                map.setZoom(targetZoomLevel); // 데스크탑에서 기본 줌 레벨
             }
-        }
+        </script>
+        <!-- Open Graph & Twitter Card 메타 태그 -->
+        <meta property="og:title" content="커튼">
+        <meta property="og:description" content="커튼에 오신걸 환영합니다.">
+        <meta property="og:image" content="/media/on.png">
+        <meta property="og:url" content="https://커튼.kr">
 
-        if (points.length === 0) {
-            alert("선택하신 지역에 해당하는 매장이 없습니다.");
-            return;
-        } else if (points.length === 1) {
-            map.setCenter(points[0]);
-            return;
-        } else {
-            var center = calculateCenter(points);
-            map.setCenter(center);
-
-            var bounds = new naver.maps.LatLngBounds();
-            points.forEach(function(point) {
-                bounds.extend(point);
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:title" content="커튼">
+        <meta name="twitter:description" content="커튼에 오신걸 환영합니다.">
+        <meta name="twitter:image" content="/media/on.png">
+        {% block head %}
+        {% endblock %}
+    </head>
+    <body class="{% if manager_page %}{% else %}bg-light text-light{% endif %}">
+        <!-- Django messages를 SweetAlert2 팝업으로 표시 -->
+        <script>
+            {% if messages %}
+            {% for message in messages %}
+            Swal.fire({
+                text: "{{ message|escapejs }}",
+                icon: "{% if message.tags %}{{ message.tags }}{% else %}info{% endif %}", // tags로 아이콘 결정
+                confirmButtonText: "확인"
             });
-            map.fitBounds(bounds, { padding: 50 });
+            {% endfor %}
+            {% endif %}
+        </script>
 
-            if (region.trim().toLowerCase() !== 'all') {
-                setTimeout(function() {
-                    map.setZoom(targetZoomLevel + 1); // 다른 지역들에 대해 적당한 줌인 레벨 적용
-                }, 500);
-            }
-        }
-    };
+        <div class="container-fluid h-100 no-gutters">
+            {% block content %}
+            {% endblock %}
+            {% if not manager_page %}
+            <!-- Footer Include -->
+            {% include 'partials/footer.html' %}
+            {% endif %}
 
-    function returnToUserLocation() {
-        if (currentUserLocation) {
-            map.setCenter(currentUserLocation);
-            map.setZoom(15);
-        } else {
-            alert("현재 위치 정보를 가져올 수 없습니다.");
-        }
-    }
-
-    getUserPosition(function(userLocation) {
-        currentUserLocation = userLocation;
-        initMap(userLocation);
-    });
-</script>
-{% endblock %}
+        </div>
+    </body>
+</html>

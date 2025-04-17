@@ -6,17 +6,32 @@
 
 <div id="map"></div>
 
-<div id="region-buttons">
+<div id="filter-controls">
     <button class="region-button" onclick="returnToUserLocation()">내 위치</button>
-    {% if unique_areas is not none %}
-    <button class="region-button" onclick="showRegion('all')">전체</button>
-    {% endif %}
-    {% for area in unique_areas %}
-    <button class="region-button" onclick="showRegion('{{ area }}')">{{ area }}</button>
-    {% endfor %}
+
+    <div class="filter-group">
+        <label for="housing-type-filter">주거 형태:</label>
+        <select id="housing-type-filter">
+            <option value="all">전체</option>
+            {% for type in unique_housing_types %}
+            <option value="{{ type }}">{{ type }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="filter-group">
+        <label for="item-type-filter">품목:</label>
+        <select id="item-type-filter">
+            <option value="all">전체</option>
+            <option value="innerCurtain">속 커튼</option>
+            <option value="outerCurtain">겉 커튼</option>
+            <option value="blind">블라인드</option>
+            <option value="etc">기타</option>
+        </select>
+    </div>
 </div>
 
-<button class="fixed-low-button btn-secondary" onclick="location.href='/places'">BAR LIST</button>
+<button class="fixed-low-button btn-secondary" onclick="location.href='/list'">시공 리스트</button>
 
 <!-- Popup container -->
 <div id="popup" class="popup">
@@ -26,21 +41,11 @@
         <button class="fixed-low-button" id="event-participation-button">이벤트 참여하기</button>
     </div>
 </div>
-<style>
-    .place-item {
-        cursor: pointer;
-        color: #626262;
-        text-decoration: none;
-    }
 
-    .place-item:hover {
-        color: #b6b4b4;
-    }
-
-</style>
 <script>
     // 서버에서 전달받은 매장 데이터 (JSON)
-    let places = {{ places_json|safe }};
+    let consts_json_string = '{{ consts_json|default:"[]"|safe }}';
+    let consts = JSON.parse(consts_json_string);
     let map;
     let infowindow;       // 전역 infowindow (재사용)
     let currentUserLocation;
@@ -215,7 +220,7 @@
         }
 
         if (points.length === 0) {
-            alert("선택하신 지역에 해당하는 매장이 없습니다.");
+            alert("변경해야함.");
             return;
         } else if (points.length === 1) {
             map.setCenter(points[0]);

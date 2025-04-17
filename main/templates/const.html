@@ -1,31 +1,35 @@
-{% extends "base.html" %}
-{% load static %}
-{% block content %}
-<div class="container">
-    <h3 class="my-4 text-center">{{ place.place }}</h3>
-    <div class="place-detail">
-        {% if place.placeImage %}
-        <img src="{{ place.placeImage.url }}" alt="{{ place.place }}">
-        {% else %}
-        <img src="{% static 'images/default.png' %}" alt="기본 이미지">
-        {% endif %}
-        <div class="place-details">
-            <p><strong>상호:</strong> <br/>{{ place.place }}</p>
-            <p>
-                <strong>주소:</strong> <br/>
-                <span id="place-address" onclick="copyToClipboard('{{ place.address }}')"
-                      style="cursor: pointer; color: blue; text-decoration: underline;">
-                    {{ place.address }}
-                </span>
-            </p>
-            <p>
-                <strong>연락처:</strong> <br/>
-                <a href="tel:{{ place.placeNum }}" style="color: blue; text-decoration: underline;">
-                    {{ place.placeNum }}
-                </a>
-            </p>
-            <!-- <p><strong>설명:</strong> {{ place.description }}</p> -->
-        </div>
-    </div>
+HTML
+
+<div>
+    <h3>{{ construction.address }}</h3>
+    <p><strong>주거 형태:</strong> {{ construction.housing_type }}</p>
+    <p><strong>작성 담당자:</strong> {{ construction.manager|default:"-" }}</p>
+    <p><strong>작성자:</strong> {{ construction.writer|default:"-" }}</p>
+    <p><strong>작성일:</strong> {{ construction.created_at|date:"Y-m-d H:i" }}</p>
+    <p><strong>최종 수정일:</strong> {{ construction.updated_at|date:"Y-m-d H:i" }}</p>
+
+    {% if const_items %}
+    <h4>시공 아이템</h4>
+    <ul>
+        {% for item in const_items %}
+        <li>
+            {{ item.get_item_type_display }}: {{ item.item_name|default:"상세 정보 없음" }}
+            {% if item_images|get_item:item.id %}
+            <div>
+                {% for image in item_images|get_item:item.id %}
+                {% if image.image_path %}
+                <img src="{{ image.image_path.url }}" alt="Item Image" style="max-width: 100px; height: auto;">
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% if item.item_detail %}
+            <p>{{ item.item_detail }}</p>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>등록된 시공 아이템이 없습니다.</p>
+    {% endif %}
 </div>
-{% endblock %}

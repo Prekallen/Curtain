@@ -9,7 +9,7 @@ class Customer(models.Model):
     region_level3       = models.CharField(max_length=50, verbose_name="읍/면/동", blank=True, null=True)
     detailed_address    = models.CharField(max_length=100, verbose_name="상세 주소")
     address             = models.TextField(max_length=100, verbose_name="주소", blank=True, null=True)
-    create_at           = models.DateTimeField(auto_now_add=True, verbose_name='요청일')
+    created_at           = models.DateTimeField(auto_now_add=True, verbose_name='요청일')
     visit_schedule      = models.DateTimeField(verbose_name="방문 예정일", null=True, blank=True)
     VISIT_TIME_CHOICES = [
         ('morning', '오전 (09:00 ~ 12:00)'),

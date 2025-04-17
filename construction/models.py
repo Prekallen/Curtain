@@ -1,7 +1,6 @@
 from django.db import models
 from curtain.utils import get_lat_lng
 
-
 class Construction(models.Model):
     id              = models.AutoField(primary_key=True, verbose_name='기본키')
     address         = models.TextField(max_length=100, verbose_name="주소")

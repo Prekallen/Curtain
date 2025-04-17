@@ -1,64 +1,56 @@
 {% extends "base.html" %}
+{% load widget_tweaks %}
 {% block content %}
+<style>
+    .required + label::after {
+        content: " *";
+        color: red;
+    }
+    .optional + label::after {
+        content: " (선택)";
+        color: gray;
+    }
+</style>
 <div class="container">
-    <div class="row mt-5">
-        <div class="col-12 text-center">
-            <h1>회원가입</h1>
-        </div>
-    </div>
-</div>
-<div class="container">
-    <div class="row mt-5">
-        <div class="col-12 text-center">
-            <form method="POST" action="." id="myForm">
+    <div class="row mt-5 justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <h1 class="text-center mb-4">회원가입</h1>
+            <form method="POST">
                 {% csrf_token %}
-                <div class="form-group">
-                    <label for="username">Username</label>
-                    <input
-                            type="text"
-                            class="form-control"
-                            id="username"
-                            placeholder="username"
-                            name="username"
-                    />
+                {% for field in form %}
+                <div class="row mb-3 align-items-center">
+                    <div class="col-md-4">
+                        <label for="{{ field.id_for_label }}" class="form-label text-md-end">
+                            {{ field.label }}
+                            {% if field.field.required %}
+                            <span class="text-danger">*</span>
+                            {% else %}
+                            <span class="text-muted">(선택)</span>
+                            {% endif %}
+                        </label>
+                    </div>
+                    <div class="col-md-8">
+                        {{ field|attr:"class:form-control" }}
+                        {% if field.errors %}
+                        <div class="alert alert-danger mt-2">
+                            {% for error in field.errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        {% if not field.field.required %}
+                        <small class="form-text text-muted">입력하지 않아도 됩니다.</small>
+                        {% endif %}
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="email">Email address</label>
-                    <input
-                            type="email"
-                            class="form-control"
-                            id="email"
-                            placeholder="email"
-                            name="email"
-                    />
+                {% endfor %}
+                <div class="row">
+                    <div class="col-md-8 offset-md-4">
+                        <button type="submit" class="btn btn-primary btn-block">회원가입</button>
+                        <button type="button" class="btn btn-primary btn-block" onclick="window.location.href='/manager'">HOME</button>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input
-                            type="password"
-                            class="form-control"
-                            id="password"
-                            placeholder="password"
-                            name="password"
-                    />
-                </div>
-                <div class="form-group">
-                    <label for="re_password">Re-Password</label>
-                    <input
-                            type="password"
-                            class="form-control"
-                            id="re_password"
-                            placeholder="re_password"
-                            name="re_password"
-                    />
-                </div>
-                <button type="submit" class="btn btn-primary" id="joinForm_submit">Submit</button>
-                <button
-                        type="button"
-                        class="btn btn-info btn-primary btn-block"
-                        onclick="location.href='/manager'"
-                >Home
-                </button>
+                <p class="mt-3 text-muted text-center"><span class="text-danger">*</span> 표시는 필수 입력 사항입니다.</p>
             </form>
         </div>
     </div>

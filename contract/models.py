@@ -19,7 +19,7 @@ class Contract(models.Model):
     manager = models.ForeignKey('manager.Manager', on_delete=models.SET_NULL, null=True, verbose_name='작성 담당자')
     writer = models.CharField(max_length=100, blank=True, null=True, verbose_name='작성자')
     writer_phone = models.CharField(max_length=20, verbose_name='작성자_전화번호')
-    create_at = models.DateTimeField(auto_now_add=True, verbose_name='주문 일자')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='주문 일자')
     updated_at  = models.DateTimeField(auto_now=True, verbose_name='마지막 수정일')
     const_date = models.DateTimeField(verbose_name='시공일', null=True, blank=True)
     CONST_TIME_CHOICES = [

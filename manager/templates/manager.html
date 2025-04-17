@@ -4,15 +4,15 @@
 <div class="row mt-5">
     <div class="col-12 text-center">
         <h1>
-            Pepper's Events Manager
+            Curtain Manager
         </h1>
     </div>
 </div>
-{% if request.session.user %}
+{% if user.is_authenticated %}
 <div class="row mt-5">
     <div class="col-12 text-center">
         <h2>
-            Welcome, {{ user }}!
+            Welcome, {{ user.name }}!
         </h2>
     </div>
 </div>
@@ -21,8 +21,20 @@
         <button
                 type="button"
                 class="btn btn-info btn-lg btn-block"
-                onclick="location.href='/board/list/'"
-        >Lists
+                onclick="location.href='/contract/list/'"
+        >계약 리스트
+        </button>
+        <button
+                type="button"
+                class="btn btn-info btn-lg btn-block"
+                onclick="location.href='/const/list/'"
+        >시공 리스트
+        </button>
+        <button
+                type="button"
+                class="btn btn-info btn-lg btn-block"
+                onclick="location.href='/customer/list/'"
+        >고객 리스트
         </button>
     </div>
 </div>
@@ -31,7 +43,7 @@
         <button
                 type="button"
                 class="btn btn-primary btn-block"
-                onclick="location.href='/member/logout/'"
+                onclick="location.href='/manager/logout/'"
         >
             Logout
         </button>
@@ -43,7 +55,7 @@
         <button
                 type="button"
                 class="btn btn-primary btn-lg btn-block"
-                onclick="location.href='/member/login/'"
+                onclick="location.href='/manager/login/'"
         >
             SignIn
         </button>
@@ -54,9 +66,9 @@
         <button
                 type="button"
                 class="btn btn-primary btn-lg btn-block"
-                onclick="location.href='/member/register/'"
+                onclick="location.href='/manager/register/'"
         >
-        SignUp
+            SignUp
         </button>
     </div>
 </div>

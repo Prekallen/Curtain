@@ -20,10 +20,12 @@ class InnerCurtainForm(forms.ModelForm):
         'required': '제품명을 입력해 주세요.'
     }, max_length=100,label="제품명")
     size = forms.DecimalField(error_messages={
-        'required': '치수를 입력해 주세요.'
-    }, max_length=10,label="제품명")
+        'required': '치수를 입력해 주세요.',
+        'invalid' : '유효한 숫자를 입력해 주세요'
+    },max_digits=10, decimal_places=2,label="제품명")
     unit_price = forms.DecimalField(error_messages={
-        'required': '단가를 입력해 주세요.'
+        'required': '단가를 입력해 주세요.',
+        'invalid' : '유효한 숫자를 입력해 주세요'
     }, max_digits=10, decimal_places=2, label="단가")
 
     class Meta:
@@ -35,10 +37,12 @@ class OuterCurtainForm(forms.ModelForm):
         'required': '제품명을 입력해 주세요.'
     }, max_length=100,label="제품명")
     size = forms.DecimalField(error_messages={
-        'required': '치수를 입력해 주세요.'
-    }, max_length=10,label="제품명")
+        'required': '치수를 입력해 주세요.',
+        'invalid' : '유효한 숫자를 입력해 주세요'
+    }, max_digits=10, decimal_places=2, label="제품명")
     unit_price = forms.DecimalField(error_messages={
-        'required': '단가를 입력해 주세요.'
+        'required': '단가를 입력해 주세요.',
+        'invalid' : '유효한 숫자를 입력해 주세요'
     }, max_digits=10, decimal_places=2, label="단가")
 
     class Meta:
@@ -50,10 +54,12 @@ class BlindForm(forms.ModelForm):
         'required': '제품명을 입력해 주세요.'
     }, max_length=100,label="제품명")
     size = forms.DecimalField(error_messages={
-        'required': '치수를 입력해 주세요.'
-    }, max_length=10,label="제품명")
+        'required': '치수를 입력해 주세요.',
+        'invalid' : '유효한 숫자를 입력해 주세요'
+    }, max_digits=10, decimal_places=2, label="제품명")
     unit_price = forms.DecimalField(error_messages={
-        'required': '단가를 입력해 주세요.'
+        'required': '단가를 입력해 주세요.',
+        'invalid' : '유효한 숫자를 입력해 주세요'
     }, max_digits=10, decimal_places=2, label="단가")
 
     class Meta:
@@ -65,10 +71,12 @@ class EtcForm(forms.ModelForm):
         'required': '제품명을 입력해 주세요.'
     }, max_length=100,label="제품명")
     size = forms.DecimalField(error_messages={
-        'required': '치수를 입력해 주세요.'
-    }, max_length=10,label="제품명")
+        'required': '치수를 입력해 주세요.',
+        'invalid' : '유효한 숫자를 입력해 주세요'
+    }, max_digits=10, decimal_places=2, label="제품명")
     unit_price = forms.DecimalField(error_messages={
-        'required': '단가를 입력해 주세요.'
+        'required': '단가를 입력해 주세요.',
+        'invalid' : '유효한 숫자를 입력해 주세요'
     }, max_digits=10, decimal_places=2, label="단가")
 
     class Meta:

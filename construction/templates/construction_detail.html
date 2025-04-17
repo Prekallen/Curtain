@@ -4,60 +4,113 @@
 <div class="row mt-5">
     <div class="col-12">
         <div class="form-group">
-            <label for="place">업체명</label>
-            <input
-                    type="text"
-                    class="form-control"
-                    id="place"
-                    value="{{ board.place }}"
-                    readonly
-            />
-            <label for="placeNum">전화번호</label>
-            <input
-                    type="text"
-                    class="form-control"
-                    id="placeNum"
-                    value="{{ board.placeNum }}"
-                    readonly
-            />
             <label for="address">주소</label>
             <textarea id="address" class="form-control" readonly>{{ board.address }}</textarea>
-            <label for="area">지역</label>
+
+            <label for="housing_type">주거 형태</label>
             <input
                     type="text"
                     class="form-control"
-                    id="area"
-                    value="{{ board.area }}"
+                    id="housing_type"
+                    value="{{ board.housing_type }}"
                     readonly
             />
-            <label for="placeImage">업체 사진</label>
-            {% if board.placeImage %}
-            <br>
-            <img src="{{ board.placeImage.url }}"  width="300">
-            <br>
-            {% else %}
-            {% endif %}
+
+            <label for="writer">작성자</label>
             <input
                     type="text"
                     class="form-control"
-                    id="placeImage"
-                    value="{{ board.placeImage }}"
+                    id="writer"
+                    value="{{ board.writer }}"
                     readonly
+            />
+
+            <label for="latitude">위도</label>
+            <input
+                    type="text"
+                    class="form-control"
+                    id="latitude"
+                    value="{{ board.latitude|default_if_none:'' }}"
+                    readonly
+            />
+
+            <label for="longitude">경도</label>
+            <input
+                    type="text"
+                    class="form-control"
+                    id="longitude"
+                    value="{{ board.longitude|default_if_none:'' }}"
+                    readonly
+            />
+
+            <label for="created_at">작성일</label>
+            <input
+                    type="text"
+                    class="form-control"
+                    id="created_at"
+                    value="{{ board.created_at|date:"Y-m-d H:i" }}"
+            readonly
+            />
+
+            <label for="updated_at">최종 수정일</label>
+            <input
+                    type="text"
+                    class="form-control"
+                    id="updated_at"
+                    value="{{ board.updated_at|date:"Y-m-d H:i" }}"
+            readonly
             />
         </div>
+
+        <h2 class="mt-4">시공 품목</h2>
+        {% if board.items.all %}
+        <table class="table table-bordered">
+            <thead class="thead-light">
+            <tr>
+                <th>품목</th>
+                <th>아이템 이름</th>
+                <th>아이템 설명</th>
+                <th>이미지</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for item in board.items.all %}
+            <tr>
+                <td>{{ item.get_item_type_display }}</td>
+                <td>{{ item.item_name|default_if_none:'' }}</td>
+                <td>{{ item.item_detail|default_if_none:'' }}</td>
+                <td>
+                    {% for image in item.images.all %}
+                    {% if image.image_path %}
+                    <img src="{{ image.image_path.url }}" alt="{{ item.item_name }}" width="100">
+                    {% else %}
+                    이미지 없음
+                    {% endif %}
+                    {% empty %}
+                    이미지 없음
+                    {% endfor %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>등록된 시공 품목이 없습니다.</p>
+        {% endif %}
+
         <button
                 type="button"
                 class="btn btn-primary"
-                onclick="location.href='/board/update/{{board.id}}/'"
+                onclick="location.href='/const/update/{{board.id}}/'"
         >
             변경
         </button>
         <button
                 type="button"
-                class="btn btn-info btn-primary btn-block"
-                onclick="location.href='{% if page_number %}/board/list/?p={{ page_number }}{% else %}/board/list/{% endif %}'"
+                class="btn btn-info btn-block mt-2"
+                onclick="location.href='{% if page_number %}/const/list/?p={{ page_number }}{% else %}/const/list/{% endif %}'"
         >
-            매장 리스트
+            시공 리스트
         </button>
     </div>
 </div>

@@ -1,15 +1,14 @@
 {% extends "base.html" %}
 {% load static %}
-{% load widget_tweaks %}
 {% block head %}
-{{ block.super }}
-        <link rel="stylesheet" href="{% static 'css/navbar.css' %}">
+<link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+<link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid h-100">
     <div class="row h-100 no-gutters">
-        {% include "navbar.html" %}
+        {% include "sidebar.html" %}
 
         <div id="main-content" class="col">
             <main class="container-fluid">
@@ -24,9 +23,8 @@
                                 <tr>
                                     <th scope="col"><input type="checkbox" id="selectAll"></th>
                                     <th scope="col">#</th>
+                                    <th scope="col">업체명</th>
                                     <th scope="col">주소</th>
-                                    <th scope="col">주거 형태</th>
-                                    <th scope="col">품목</th>
                                     <th scope="col">작성자</th>
                                     <th scope="col">작성일</th>
                                     <th scope="col">최종 수정일</th>
@@ -34,18 +32,17 @@
                                 </thead>
                                 <tbody>
                                 {% for const in consts %}
-                                <tr onclick="location.href='/const/detail/{{const.id}}'">
+                                <tr>
                                     <td><input type="checkbox" name="construction_ids" value="{{ const.id }}" class="itemCheckbox"></td>
                                     <th scope="row">{{ const.id }}</th>
+                                    <td>{{ const.place }}</td>
                                     <td>{{ const.address }}</td>
-                                    <td>{{ const.housing_type }}</td>
-                                    <td>{{ const.item_type }}</td>
                                     <td>{{ const.writer }}</td>
                                     <td>{{ const.created_at|date:"Y-m-d H:i" }}</td>
                                     <td>{{ const.updated_at|date:"Y-m-d H:i" }}</td>
                                 </tr>
                                 {% empty %}
-                                <tr><td colspan="8">등록된 시공 정보가 없습니다.</td></tr>
+                                <tr><td colspan="7">등록된 시공 정보가 없습니다.</td></tr>
                                 {% endfor %}
                                 </tbody>
                             </table>
@@ -74,7 +71,7 @@
                             </li>
                             {% else %}
                             <li class="page-item">
-                                <a class="page-link" href="?p={{ num }}{% if query_string %}&{{ query_string }}{% endif %}"">{{ num }}</a>
+                                <a class="page-link" href="?p={{ num }}{% if query_string %}&{{ query_string }}{% endif %}">{{ num }}</a>
                             </li>
                             {% endif %}
                             {% endfor %}
@@ -99,7 +96,7 @@
                             <button class="btn btn-danger" type="submit" onclick="return confirm('선택한 시공 정보를 정말로 삭제하시겠습니까?');">선택 삭제</button>
                         </div>
                         <div class="col-md-6 text-right">
-                            <button class="btn btn-primary" type="button" onclick="location.href='/const/register/'">등록</button>
+                            <button class="btn btn-primary" onclick="location.href='/const/register/'">등록</button>
                         </div>
                     </div>
                 </form>
@@ -108,9 +105,8 @@
                     <div class="input-group">
                         <div class="input-group-prepend">
                             <select name="search_type" class="form-control">
+                                <option value="place" {% if request.GET.search_type == 'place' %}selected{% endif %}>업체명</option>
                                 <option value="address" {% if request.GET.search_type == 'address' %}selected{% endif %}>주소</option>
-                                <option value="housing_type" {% if request.GET.search_type == 'housing_type' %}selected{% endif %}>주거 형태</option>
-                                <option value="item_type" {% if request.GET.search_type == 'item_type' %}selected{% endif %}>품목</option>
                             </select>
                         </div>
                         <input type="text" name="q" class="form-control" placeholder="검색" value="{{ request.GET.q }}">
