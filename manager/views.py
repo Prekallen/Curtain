@@ -38,6 +38,7 @@ def login(request):
             user = authenticate(request, username=username, password=password)
             if user is not None:
                 auth_login(request, user)
+                request.session['user'] = user.id
                 return redirect('/manager')
             else:
                 form.add_error(None, '아이디 또는 비밀번호가 잘못되었습니다.')

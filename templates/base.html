@@ -57,7 +57,7 @@
         {% block head %}
         {% endblock %}
     </head>
-    <body class="{% if manager_page %}{% else %}bg-light text-light{% endif %}">
+    <body class="{% if manager_page %}{% else %}bg-dark text-light{% endif %}">
         <!-- Django messages를 SweetAlert2 팝업으로 표시 -->
         <script>
             {% if messages %}
@@ -80,5 +80,7 @@
             {% endif %}
 
         </div>
+        {% block scripts %}
+        {% endblock %}
     </body>
 </html>

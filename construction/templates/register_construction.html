@@ -24,12 +24,18 @@
 
         <!-- ConstItemFormSet -->
         <h3 class="mb-3 text-success">시공 품목</h3>
-        <div id="formset-container">
-            {{ const_item_formset.management_form }}
+        {{ const_item_formset.management_form }}
 
+        {% for item_form, image_formset in paired_forms %}
+        <div class="image-management-form" data-index="{{ forloop.counter0 }}" style="display: none;">
+            {{ image_formset.management_form }}
+        </div>
+        {% endfor %}
+
+        <div id="formset-container">
             {% for item_form, image_formset in paired_forms %}
             <div class="card bg-dark text-light mb-4 p-3 item-form">
-                <h5 class="mb-3 text-info">품목 #{{ forloop.counter }}</h5>
+                <h5 class="mb-3 text-info">품목 #<span class="item-number">{{ forloop.counter }}</span></h5>
 
                 <div class="row">
                     <div class="col-md-4 mb-3">
@@ -45,6 +51,7 @@
                         {{ item_form.item_detail|add_class:"form-control" }}
                     </div>
                 </div>
+                {{ image_form.image_path.errors }}
 
                 <!-- 이미지 섹션 -->
                 <div class="mt-4">
@@ -56,20 +63,30 @@
                     </div>
                     {% endif %}
 
-                    <div class="row image-container" id="image-container-{{ forloop.counter0 }}">
+                    <!-- management_form을 숨겨진 div에 따로 넣기 -->
+                    <div class="image-management-form" data-index="{{ forloop.counter0 }}" style="display: none;">
                         {{ image_formset.management_form }}
-                        {% for image_form in image_formset %}
+                        {% for hidden_field in image_formset.management_form.hidden_fields %}
+                        {{ hidden_field }}
+                        {% endfor %}
+                    </div>
+
+                    <!-- 기존 이미지 업로드 formset 영역 -->
+                    <div class="row image-container" id="image-container-{{ forloop.counter0 }}">
+                    {% for image_form in image_formset %}
                         <div class="col-6 col-md-4 col-lg-3 mb-4 image-form">
                             {{ image_form.image_path|add_class:"form-control image-input" }}
 
-                            {% if image_form.instance.image_path %}
-                            <img src="{{ image_form.instance.image_path.url }}"
-                                 class="img-thumbnail mt-2 w-100 image-preview"
-                                 style="height: 200px; object-fit: cover;"
-                                 alt="이미지 미리보기">
-                            {% else %}
-                            <img class="image-preview mt-2 w-100" style="display:none; height:200px; object-fit: cover;">
-                            {% endif %}
+                            <div class="image-preview-wrapper mt-2">
+                                {% if image_form.instance.image_path %}
+                                <img src="{{ image_form.instance.image_path.url }}"
+                                     class="img-thumbnail w-100 image-preview"
+                                     style="height: 200px; object-fit: cover;"
+                                     alt="이미지 미리보기">
+                                {% else %}
+                                <img class="image-preview w-100" style="display:none; height:200px; object-fit: cover;">
+                                {% endif %}
+                            </div>
 
                             <button type="button" class="btn btn-sm btn-outline-danger mt-2 delete-image">삭제</button>
                         </div>
@@ -82,6 +99,7 @@
                         + 이미지 추가
                     </button>
                 </div>
+                {{ image_form.image_path.errors }}
 
                 <button type="button" class="btn btn-danger mt-4 w-100 delete-item">품목 삭제</button>
             </div>
@@ -92,135 +110,31 @@
             <button type="button" class="btn btn-outline-light" id="add-item-btn">+ 품목 추가</button>
         </div>
 
+        <!-- All image formset management forms -->
+        <div style="display: none;">
+            {% for item_form, image_formset in paired_forms %}
+            {{ image_formset.management_form }}
+            {% for hidden_field in image_formset.management_form.hidden_fields %}
+            {{ hidden_field }}
+            {% endfor %}
+            {% endfor %}
+        </div>
+
         <hr class="text-light">
 
         <!-- Submit Button -->
         <div class="text-center">
             <button type="submit" class="btn btn-success px-5">저장</button>
+            <a href="{% url 'construction_list' %}" class="btn btn-outline-secondary mt-3">리스트로 돌아가기</a>
         </div>
+
     </form>
 </div>
 
 <!-- Scripts -->
+{% block scripts %}
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-    const maxImages = 5;
-
-    $(document).ready(function () {
-        // 이미지 미리보기
-        $(document).on('change', '.image-input', function () {
-            const preview = $(this).siblings('.image-preview')[0];
-            if (this.files && this.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    preview.src = e.target.result;
-                    preview.style.display = 'block';
-                };
-                reader.readAsDataURL(this.files[0]);
-            }
-        });
-
-        // 이미지 삭제
-        $(document).on('click', '.delete-image', function () {
-            const container = $(this).closest('.image-container');
-            const imageForms = container.find('.image-form');
-
-            if (imageForms.length > 1) {
-                $(this).closest('.image-form').remove();
-
-                // 총 개수 다시 설정
-                const totalFormsInput = container.find('input[name$="-TOTAL_FORMS"]');
-                const newCount = container.find('.image-form').length;
-                totalFormsInput.val(newCount);
-            } else {
-                alert('최소 한 개의 이미지는 등록해야 합니다.');
-            }
-        });
-
-        // 이미지 추가
-        $(document).on('click', '.add-image', function () {
-            const index = $(this).data('index');
-            const container = $(`#image-container-${index}`);
-            const totalFormsInput = container.find('input[name$="-TOTAL_FORMS"]');
-            let formCount = parseInt(totalFormsInput.val());
-
-            if (formCount >= maxImages) {
-                alert('이미지는 품목당 최대 5개까지만 추가할 수 있습니다.');
-                return;
-            }
-
-            const firstForm = container.find('.image-form:first');
-            const newForm = firstForm.clone();
-
-            newForm.find('input, select, textarea').each(function () {
-                const name = $(this).attr('name');
-                const id = $(this).attr('id');
-                if (name && id) {
-                    const newName = name.replace(/-\d+-/, `-${formCount}-`);
-                    const newId = id.replace(/-\d+-/, `-${formCount}-`);
-                    $(this).attr({ name: newName, id: newId }).val('');
-                }
-            });
-
-            newForm.find('.image-preview').attr('src', '').hide();
-            container.append(newForm);
-            totalFormsInput.val(formCount + 1);
-        });
-
-        // 품목 삭제 (1개는 남겨야 함)
-        $(document).on('click', '.delete-item', function () {
-            if ($('.item-form').length > 1) {
-                $(this).closest('.item-form').remove();
-
-                // 품목 번호 재정렬 (선택)
-                $('.item-form').each(function (i) {
-                    $(this).find('h5').text(`품목 #${i + 1}`);
-                });
-            } else {
-                alert('최소 1개의 품목은 남겨야 합니다.');
-            }
-        });
-
-        // 품목 추가
-        const totalItemsInput = $('#id_items-TOTAL_FORMS');
-        const itemContainer = $('#formset-container');
-        const itemTemplate = itemContainer.children('.item-form:first').clone();
-
-        $('#add-item-btn').on('click', function () {
-            let formIdx = parseInt(totalItemsInput.val());
-            const newItem = itemTemplate.clone();
-
-            // 필드 초기화 및 name/id 재정렬
-            newItem.find('input, select, textarea').each(function () {
-                const name = $(this).attr('name');
-                const id = $(this).attr('id');
-                if (name && id) {
-                    const newName = name.replace(/-\d+-/, `-${formIdx}-`);
-                    const newId = id.replace(/-\d+-/, `-${formIdx}-`);
-                    $(this).attr({ name: newName, id: newId });
-
-                    if ($(this).is(':checkbox') || $(this).is(':radio')) {
-                        $(this).prop('checked', false);
-                    } else {
-                        $(this).val('');
-                    }
-                }
-            });
-
-            // 이미지 formset 초기화 (1개만)
-            newItem.find('.image-form').not(':first').remove();
-            newItem.find('.image-preview').hide().attr('src', '');
-            newItem.find('input[name$="-TOTAL_FORMS"]').val(1);
-
-            // 고유 인덱스 설정
-            newItem.find('h5').text(`품목 #${formIdx + 1}`);
-            newItem.find('.image-container')
-                .attr('id', `image-container-${formIdx}`);
-            newItem.find('.add-image').attr('data-index', formIdx);
-
-            totalItemsInput.val(formIdx + 1);
-            itemContainer.append(newItem);
-        });
-    });
-</script>
+<script src="https://unpkg.com/heic2any"></script>
+<script src="{% static 'js/dynamic_formsets.js' %}"></script>
+{% endblock %}
 {% endblock %}

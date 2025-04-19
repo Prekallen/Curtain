@@ -35,11 +35,18 @@ class ConstItemForm(forms.ModelForm):
         model = ConstItem
         fields = ['item_type', 'item_name', 'item_detail']
 
-ConstItemFormSet = inlineformset_factory(
+RegisterConstItemFormSet = inlineformset_factory(
     Construction,
     ConstItem,
     form=ConstItemForm,
     extra=1,
+    can_delete=True
+)
+UpdateConstItemFormSet = inlineformset_factory(
+    Construction,
+    ConstItem,
+    form=ConstItemForm,
+    extra=0,
     can_delete=True
 )
 

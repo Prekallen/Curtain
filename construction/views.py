@@ -1,23 +1,18 @@
 import requests
 from django.core.paginator import Paginator
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.http import Http404, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db import transaction
 
 
 from manager.models import Manager
-from .forms import ConstructionForm, ConstItemFormSet, ItemImageFormSet
+from .forms import ConstructionForm, RegisterConstItemFormSet, UpdateConstItemFormSet, ItemImageFormSet
 from .models import Construction, ConstItem, ItemImage
 import logging
 
 logger = logging.getLogger(__name__)
-
-# session 검사
-def session_check(request):
-    if not request.session.get('user'):
-        return redirect('/manager/login/')
-    # 세션에 'user' 키를 불러올 수 없으면, 로그인하지 않은 사용자이므로 로그인 페이지로 리다이렉트 한다.
 
 # 시공 목록
 def construction_list(request):
@@ -51,7 +46,7 @@ def construction_list(request):
     query_string = query_params.urlencode()
 
     context = {
-        'admin_page': True,
+        'manager_page': True,
         'consts': consts,
         'page_numbers': page_numbers,
         'has_previous_group': start_page > 1,
@@ -65,17 +60,16 @@ def construction_list(request):
     return render(request, 'construction_list.html', context)
 
 # 시공 등록
+@login_required(login_url='/manager/login/')
 def register_construction(request):
-    session_check(request)
-
     if request.method == 'POST':
         form = ConstructionForm(request.POST)
         const_item_formset = ConstItemFormSet(request.POST, request.FILES, prefix='items')
-
         image_formsets = []
         image_formsets_valid = True
         total_item_forms = int(request.POST.get('items-TOTAL_FORMS', 0))
 
+        # 각 ConstItem에 대응되는 이미지 FormSet 생성
         for i in range(total_item_forms):
             image_formset = ItemImageFormSet(
                 request.POST,
@@ -83,51 +77,69 @@ def register_construction(request):
                 prefix=f'images-{i}'
             )
             image_formsets.append(image_formset)
+
             if not image_formset.is_valid():
                 image_formsets_valid = False
 
         if form.is_valid() and const_item_formset.is_valid() and image_formsets_valid:
-            with transaction.atomic():
-                user_id = request.session.get('user')
-                member = Manager.objects.get(pk=user_id)
-                construction = form.save(commit=False)
-                construction.manager = member
-                construction.writer = member.name
-                _save_board_with_lat_long(construction, construction.address)
-                construction.save()
+            try:
+                with transaction.atomic():
+                    member = request.user
+                    construction = form.save(commit=False)
+                    construction.manager = member
+                    construction.writer = member.name
+                    _save_board_with_lat_long(construction, construction.address)
+                    construction.save()
 
-                const_items = const_item_formset.save(commit=False)
-                for idx, const_item in enumerate(const_items):
-                    const_item.construction = construction
-                    const_item.save()
+                    const_items = const_item_formset.save(commit=False)
 
-                    image_formset = image_formsets[idx]
-                    images = image_formset.save(commit=False)
-                    for img in images:
-                        img.item = const_item
-                        img.save()
+                    for idx, const_item in enumerate(const_items):
+                        const_item.const_id = construction
+                        const_item.save()
 
-            return redirect('const/list')
+                        image_formset = image_formsets[idx]
+                        images = image_formset.save(commit=False)
+
+                        for img in images:
+                            img.item_id = const_item
+                            img.save()
+
+                        # 삭제된 이미지 처리
+                        for obj in image_formset.deleted_objects:
+                            obj.delete()
+
+                    const_item_formset.save_m2m()  # if using m2m fields
+
+                return redirect('/const/list')
+            except Exception as e:
+                import traceback
+                print(traceback.format_exc())
+                messages.error(request, f"저장 중 예외 발생: {e}")
+                return redirect('/const/register')
     else:
         form = ConstructionForm()
-        const_item_formset = ConstItemFormSet(queryset=ConstItem.objects.none(), prefix='items')
-        image_formsets = [ItemImageFormSet(queryset=ItemImage.objects.none(), prefix=f'images-{i}')
-                          for i in range(len(const_item_formset.forms))]
+        const_item_formset = RegisterConstItemFormSet(queryset=ConstItem.objects.none(), prefix='items')
+        image_formsets = [
+            ItemImageFormSet(queryset=ItemImage.objects.none(), prefix=f'images-{i}')
+            for i in range(len(const_item_formset.forms))
+        ]
 
-    paired_forms = zip(const_item_formset.forms, image_formsets)
+    paired_forms = list(zip(const_item_formset.forms, image_formsets))
+
     return render(request, 'register_construction.html', {
         'form': form,
         'const_item_formset': const_item_formset,
         'image_formsets': image_formsets,
         'paired_forms': paired_forms,
+        'manager_page': True,
     })
 
-
  # 시공 상세
+@login_required(login_url='/manager/login/')
 def construction_detail(request, pk):
     # pk 에 해당하는 글을 가지고 올 수 있게 된다.
     context = {
-        'admin_page': True,  # 관리자 페이지일 경우 True로 설정
+        'manager_page': True,  # 매니저 페이지일 경우 True로 설정
     }
     try:
         const = Construction.objects.get(pk=pk)
@@ -153,40 +165,94 @@ def construction_detail(request, pk):
 
     return render(request, 'construction_detail.html', context)
 
+@login_required(login_url='/manager/login/')
 def construction_update(request, pk):
-    session_check(request)
     instance = get_object_or_404(Construction, pk=pk)
 
     if request.method == "POST":
-        form = ConstructionForm(request.POST, request.FILES, instance=instance)
-        if form.is_valid():
-            construction = form.save(commit=False)
-            user_id = request.session.get('user')
-            manager = Manager.objects.get(pk=user_id)
-            construction.manager = manager
-            construction.writer = manager.name
-            _save_board_with_lat_long(construction, construction.address)
+        construction_form = ConstructionForm(request.POST, request.FILES, instance=instance)
+        const_item_formset = UpdateConstItemFormSet(request.POST, request.FILES, instance=instance)
 
+        # 이미지 formset 각 품목에 붙이기
+        for const_item_form in const_item_formset.forms:
+            prefix = f'image-{const_item_form.prefix}'
+            image_formset = ItemImageFormSet(
+                request.POST,
+                request.FILES,
+                instance=const_item_form.instance,
+                prefix=prefix
+            )
+            const_item_form.image_formset = image_formset
+
+        # 이미지 유효성 검사는 이미지 입력이 있는 폼에 대해서만 체크
+        image_formsets_valid = all(
+            not item_form.image_formset.total_form_count() or item_form.image_formset.is_valid()
+            for item_form in const_item_formset.forms
+        )
+
+        forms_valid = (
+                construction_form.is_valid() and
+                const_item_formset.is_valid() and
+                image_formsets_valid
+        )
+
+        if forms_valid:
             try:
                 with transaction.atomic():
+                    construction = construction_form.save(commit=False)
+                    member = request.user
+                    construction.manager = member
+                    construction.writer = member.name
+                    _save_board_with_lat_long(construction, construction.address)
                     construction.save()
+
+                    const_items = const_item_formset.save(commit=False)
+                    for item in const_item_formset.deleted_objects:
+                        item.delete()
+
+                    for item in const_items:
+                        item.construction = construction
+                        item.save()
+
+                    for item_form in const_item_formset.forms:
+                        image_formset = item_form.image_formset
+                        image_formset.instance = item_form.instance
+                        image_formset.save()
+
                 messages.success(request, "시공 정보가 성공적으로 수정되었습니다.")
-                return redirect('construction_list')
+                return redirect("construction_list")
+
             except Exception as e:
                 logger.error(f"시공 정보 수정 중 오류 발생: {e}")
                 messages.error(request, f"시공 정보 수정 중 오류가 발생했습니다: {e}")
-                return redirect('construction_update', pk=pk)
         else:
-            logger.error(f"ConstructionForm 수정 오류: {form.errors}")
-            messages.error(request, "입력하신 정보가 유효하지 않습니다. 다시 확인해주세요.")
+            messages.error(request, "입력하신 정보에 오류가 있습니다. 다시 확인해주세요.")
 
     else:
-        form = ConstructionForm(instance=instance)
+        construction_form = ConstructionForm(instance=instance)
+        const_item_formset = UpdateConstItemFormSet(instance=instance)
 
-    return render(request, 'construction_update.html', {'form':form,'construction':instance,'admin_page':True})
+        # 이미지 formset 붙이기
+        for const_item_form in const_item_formset.forms:
+            prefix = f'image-{const_item_form.prefix}'
+            image_formset = ItemImageFormSet(
+                instance=const_item_form.instance,
+                prefix=prefix
+            )
+            const_item_form.image_formset = image_formset
 
+    return render(request, 'construction_update.html', {
+        'construction_form': construction_form,
+        'const_item_formset': const_item_formset,
+        'construction': instance,
+        'manager_page': True,
+    })
+
+
+
+@login_required(login_url='/manager/login/')
 def construction_delete(request, pk):
-    session_check(request)
+
     construction = get_object_or_404(Construction, pk=pk)
 
     if request.method == "POST":
@@ -205,8 +271,8 @@ def construction_delete(request, pk):
         messages.error(request, "잘못된 접근입니다.")
         return redirect('construction_detail', pk=pk)
 
+@login_required(login_url='/manager/login/')
 def bulk_delete_construction(request):
-    session_check(request)
     if request.method == "POST":
         construction_ids = request.POST.getlist('construction_ids')
         if construction_ids:

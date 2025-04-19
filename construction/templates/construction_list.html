@@ -34,8 +34,10 @@
                                 </thead>
                                 <tbody>
                                 {% for const in consts %}
-                                <tr onclick="location.href='/const/detail/{{const.id}}'">
-                                    <td><input type="checkbox" name="construction_ids" value="{{ const.id }}" class="itemCheckbox"></td>
+                                <tr data-href="/const/detail/{{ const.id }}">
+                                    <td>
+                                        <input type="checkbox" name="construction_ids" value="{{ const.id }}" class="itemCheckbox">
+                                    </td>
                                     <th scope="row">{{ const.id }}</th>
                                     <td>{{ const.address }}</td>
                                     <td>{{ const.housing_type }}</td>
@@ -146,6 +148,16 @@
                 alert('삭제할 시공 정보를 선택해주세요.');
                 event.preventDefault(); // 폼 제출 방지
             }
+        });
+
+        document.querySelectorAll('tr[data-href]').forEach(row => {
+            row.addEventListener('click', function (event) {
+                // 클릭한 대상이 input[type=checkbox]이면 무시
+                if (event.target.tagName.toLowerCase() === 'input') {
+                    return;
+                }
+                window.location.href = row.dataset.href;
+            });
         });
     });
 </script>

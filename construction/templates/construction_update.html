@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4 text-primary">시공 정보 수정</h2>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <!-- Construction Form -->
+        <div class="mb-4">
+            <label for="{{ construction_form.address.id_for_label }}" class="form-label">주소</label>
+            {{ construction_form.address|add_class:"form-control" }}
+        </div>
+
+        <div class="mb-4">
+            <label for="{{ construction_form.housing_type.id_for_label }}" class="form-label">주거 형태</label>
+            {{ construction_form.housing_type|add_class:"form-control" }}
+        </div>
+
+        <hr>
+
+        <!-- ConstItem FormSet -->
+        <div id="formset-container">
+            {{ const_item_formset.management_form }}
+            {% for const_item_form in const_item_formset %}
+            <div class="const-item-form item-form border rounded p-4 mb-4">
+                <h5 class="mb-3">품목 {{ forloop.counter }}</h5>
+
+                <!-- ConstItem fields -->
+                {{ const_item_form.non_field_errors }}
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="{{ const_item_form.item_type.id_for_label }}" class="form-label">품목 유형</label>
+                        {{ const_item_form.item_type|add_class:"form-select" }}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ const_item_form.item_name.id_for_label }}" class="form-label">품목 이름</label>
+                        {{ const_item_form.item_name|add_class:"form-control" }}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ const_item_form.item_detail.id_for_label }}" class="form-label">상세 설명</label>
+                        {{ const_item_form.item_detail|add_class:"form-control" }}
+                    </div>
+                </div>
+
+                {% if forloop.first %}
+                <div class="image-management-form" data-index="0">
+                    {{ const_item_form.image_formset.management_form }}
+                </div>
+                {% endif %}
+
+                <!-- ItemImage FormSet -->
+                <div class="row">
+                    {% for image_form in const_item_form.image_formset %}
+                    <div class="col-6 col-md-4 mb-3 image-form">
+                        {{ image_form.image_path.errors }}
+                        {{ image_form.image_path|add_class:"form-control image-input" }}
+
+                        <div class="mt-2 image-preview-wrapper">
+                            {% if image_form.instance.image_path %}
+                            <img src="{{ image_form.instance.image_path.url }}"
+                                 class="img-thumbnail w-100 image-preview"
+                                 style="height: 200px; object-fit: cover;">
+                            {% else %}
+                            <img class="image-preview w-100" style="display:none; height: 200px; object-fit: cover;">
+                            {% endif %}
+                        </div>
+
+                        <button type="button" class="btn btn-sm btn-outline-danger mt-2 delete-image">삭제</button>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <button type="button"
+                        class="btn btn-sm btn-outline-primary add-image mt-2"
+                        data-index="{{ forloop.counter0 }}">
+                    + 이미지 추가
+                </button>
+
+                <button type="button"
+                        class="btn btn-outline-danger mt-4 w-100 delete-item">
+                    품목 삭제
+                </button>
+            </div>
+            {% empty %}
+            <p class="text-muted">등록된 품목이 없습니다.</p>
+            {% endfor %}
+        </div>
+
+        <!-- 이미지 관리폼 (중복 제거용) -->
+        <div style="display: none;">
+            {% for const_item_form in const_item_formset %}
+            {% if forloop.first %}
+            {{ const_item_form.image_formset.management_form }}
+            {% endif %}
+            {% endfor %}
+        </div>
+
+        <div class="mb-4">
+            <button type="button" id="add-item-btn" class="btn btn-outline-secondary">+ 품목 추가</button>
+        </div>
+
+        <div class="text-center">
+            <button type="submit" class="btn btn-success px-5">저장</button>
+            <a href="{% url 'construction_list' %}" class="btn btn-outline-secondary ms-3">리스트로</a>
+        </div>
+    </form>
+</div>
+
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://unpkg.com/heic2any"></script>
+<script src="{% static 'js/dynamic_formsets.js' %}"></script>
+{% endblock %}
+{% endblock %}
