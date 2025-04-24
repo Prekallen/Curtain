@@ -1,16 +1,26 @@
+import os
+import logging
 import requests
-from django.core.paginator import Paginator
+
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import Http404, JsonResponse
-from django.shortcuts import render, redirect, get_object_or_404
+from django.core.paginator import Paginator
 from django.db import transaction
-
+from django.http import JsonResponse, Http404, HttpResponseForbidden
+from django.shortcuts import render, redirect, get_object_or_404
+from django.views.decorators.http import require_POST
 
 from manager.models import Manager
-from .forms import ConstructionForm, RegisterConstItemFormSet, UpdateConstItemFormSet, ItemImageFormSet
+from .forms import (
+    ConstructionForm,
+    RegisterConstItemFormSet,
+    UpdateConstItemFormSet,
+    ItemImageFormSet,
+    get_item_image_formset,
+)
 from .models import Construction, ConstItem, ItemImage
-import logging
+
 
 logger = logging.getLogger(__name__)
 
@@ -64,10 +74,11 @@ def construction_list(request):
 def register_construction(request):
     if request.method == 'POST':
         form = ConstructionForm(request.POST)
-        const_item_formset = ConstItemFormSet(request.POST, request.FILES, prefix='items')
+        const_item_formset = RegisterConstItemFormSet(request.POST, request.FILES, prefix='items')
         image_formsets = []
         image_formsets_valid = True
         total_item_forms = int(request.POST.get('items-TOTAL_FORMS', 0))
+        ItemImageFormSet = get_item_image_formset(is_update=False)
 
         # 각 ConstItem에 대응되는 이미지 FormSet 생성
         for i in range(total_item_forms):
@@ -119,6 +130,7 @@ def register_construction(request):
     else:
         form = ConstructionForm()
         const_item_formset = RegisterConstItemFormSet(queryset=ConstItem.objects.none(), prefix='items')
+        ItemImageFormSet = get_item_image_formset(is_update=False)
         image_formsets = [
             ItemImageFormSet(queryset=ItemImage.objects.none(), prefix=f'images-{i}')
             for i in range(len(const_item_formset.forms))
@@ -168,6 +180,7 @@ def construction_detail(request, pk):
 @login_required(login_url='/manager/login/')
 def construction_update(request, pk):
     instance = get_object_or_404(Construction, pk=pk)
+    ItemImageFormSet = get_item_image_formset(is_update=True)
 
     if request.method == "POST":
         construction_form = ConstructionForm(request.POST, request.FILES, instance=instance)
@@ -184,17 +197,21 @@ def construction_update(request, pk):
             )
             const_item_form.image_formset = image_formset
 
-        # 이미지 유효성 검사는 이미지 입력이 있는 폼에 대해서만 체크
+        # 1. ConstructionForm 및 ConstItemFormSet 유효성 검사
+        construction_valid = construction_form.is_valid()
+        items_valid = const_item_formset.is_valid()
+
+        # 2. 이미지 폼셋 유효성 검사 (삭제되지 않은 폼만 검사)
         image_formsets_valid = all(
-            not item_form.image_formset.total_form_count() or item_form.image_formset.is_valid()
+            (not item_form.cleaned_data.get('DELETE') and (
+                    not item_form.image_formset.total_form_count() or
+                    item_form.image_formset.is_valid()
+            ))
+            or item_form.cleaned_data.get('DELETE')
             for item_form in const_item_formset.forms
         )
 
-        forms_valid = (
-                construction_form.is_valid() and
-                const_item_formset.is_valid() and
-                image_formsets_valid
-        )
+        forms_valid = construction_valid and items_valid and image_formsets_valid
 
         if forms_valid:
             try:
@@ -215,9 +232,10 @@ def construction_update(request, pk):
                         item.save()
 
                     for item_form in const_item_formset.forms:
-                        image_formset = item_form.image_formset
-                        image_formset.instance = item_form.instance
-                        image_formset.save()
+                        if not item_form.cleaned_data.get('DELETE'):
+                            image_formset = item_form.image_formset
+                            image_formset.instance = item_form.instance
+                            image_formset.save()
 
                 messages.success(request, "시공 정보가 성공적으로 수정되었습니다.")
                 return redirect("construction_list")
@@ -248,6 +266,25 @@ def construction_update(request, pk):
         'manager_page': True,
     })
 
+@login_required
+@require_POST
+def delete_item_image(request):
+    image_id = request.POST.get('image_id')
+    if not image_id:
+        return JsonResponse({'error': 'No image ID provided'}, status=400)
+
+    try:
+        image = ItemImage.objects.get(id=image_id)
+        if image.image_path:
+            image_path = image.image_path.path
+            if os.path.exists(image_path):
+                os.remove(image_path)  # 실제 파일 삭제
+        image.delete()  # DB에서 삭제
+        return JsonResponse({'success': True})
+    except ItemImage.DoesNotExist:
+        return JsonResponse({'error': 'Image not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 @login_required(login_url='/manager/login/')

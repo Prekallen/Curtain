@@ -22,6 +22,7 @@ class ConstructionForm(forms.ModelForm):
             'address': forms.Textarea(attrs={'rows': 3}),
         }
 
+
 class ConstItemForm(forms.ModelForm):
     item_type = forms.ChoiceField(
         choices=ConstItem.ITEM_TYPE_CHOICES,
@@ -33,7 +34,23 @@ class ConstItemForm(forms.ModelForm):
 
     class Meta:
         model = ConstItem
+        exclude = ['id']  # 또는 fields 에 id를 포함하지 않기
         fields = ['item_type', 'item_name', 'item_detail']
+
+class ConstructionUpdateForm(ConstructionForm):
+    def clean(self):
+        cleaned_data = super().clean()
+        # 필요 시 추가 유효성 검사
+        return cleaned_data
+
+class UpdateConstItemForm(ConstItemForm):
+    def clean(self):
+        cleaned_data = super().clean()
+        if not self.cleaned_data.get('DELETE', False):
+            images = self.image_formset
+            if images.total_form_count() == 0:
+                raise forms.ValidationError('이미지를 하나 이상 등록해주세요.')
+        return cleaned_data
 
 RegisterConstItemFormSet = inlineformset_factory(
     Construction,
@@ -42,10 +59,11 @@ RegisterConstItemFormSet = inlineformset_factory(
     extra=1,
     can_delete=True
 )
+# Update용 ConstItemFormSet
 UpdateConstItemFormSet = inlineformset_factory(
     Construction,
     ConstItem,
-    form=ConstItemForm,
+    form=UpdateConstItemForm,
     extra=0,
     can_delete=True
 )
@@ -57,6 +75,7 @@ class ItemImageForm(forms.ModelForm):
         model = ItemImage
         fields = ['image_path']
 
+
 class BaseItemImageFormSet(BaseInlineFormSet):
     def clean(self):
         super().clean()
@@ -64,11 +83,31 @@ class BaseItemImageFormSet(BaseInlineFormSet):
         if len(images) > 5:
             raise ValidationError("이미지는 품목당 최대 5개까지만 업로드할 수 있습니다.")
 
+        if not self.instance.pk and len(images) < 1:
+            raise ValidationError("최소 한 개 이상의 이미지를 등록해야 합니다.")
+
+
 ItemImageFormSet = inlineformset_factory(
     ConstItem,
     ItemImage,
     form=ItemImageForm,
     formset=BaseItemImageFormSet,
     extra=1,
-    can_delete=True
+    can_delete=True,
+    min_num=0,  # 최소 이미지 수 없음
 )
+
+# Update용 ItemImageFormSet
+def get_item_image_formset(is_update=False):
+    class ItemImageForm(forms.ModelForm):
+        class Meta:
+            model = ItemImage
+            fields = '__all__'
+
+    return inlineformset_factory(
+        ConstItem,
+        ItemImage,
+        form=ItemImageForm,
+        extra=0 if is_update else 1,
+        can_delete=True  # 수정 시 삭제 허용
+    )

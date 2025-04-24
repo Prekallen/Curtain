@@ -1,0 +1,371 @@
+.button {
+    margin: 5px;
+    padding: 10px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+.button:hover {
+    background-color: #45a049;
+}
+/* [godfather_info] lead */
+.lead {
+    font-size: 1.1rem; /* 기본 크기 */
+}
+
+@media (max-width: 768px) {
+    .lead {
+        font-size: 1rem; /* 모바일 화면에서 글씨 크기 조정 */
+    }
+}
+
+/* [stamp] no-link */
+.no-link {
+    text-decoration: none; !important; /* 밑줄 제거 */
+    color: white !important; /* 흰색 텍스트 강제 적용 */
+    pointer-events: none; /* 클릭 불가능하게 설정 (옵션) */
+    display: inline-block;
+}
+.no-link {
+    -webkit-text-fill-color: white !important; /* 폰트 색상을 흰색으로 강제 설정 */
+}
+/* form-check*/
+.form-check {
+    display: inline-block;
+}
+.btn-success{
+    background-color: #bc1d21;
+    color: white;
+    font-family: 'Pretendard', sans-serif;
+    font-weight: bold;
+}
+.btn-success:hover{
+    background-color: #ff0000;
+}
+/* 팝업 스타일 */
+.popup {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1001;
+    overflow-y: auto;
+}
+
+.popup-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    max-width: 90%;
+    max-height: 90%;
+    overflow-y: auto;
+}
+
+.popup .close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #555;
+    border: none;
+    background: none;
+}
+
+.popup .close-btn:hover {
+    color: #000;
+}
+
+#popup-body {
+    margin-bottom: 15px;
+}
+/* 업장 리스트 CSS */
+.place-item {
+    margin-bottom: 20px;
+}
+.place-item img {
+    width: 100%;
+    height: 80px;
+    object-fit: contain; /* 이미지 전체 보이도록 */
+    border-radius: 5px;
+}
+.place-details {
+    padding: 10px;
+}
+/* 모바일 최적화: 화면 폭이 768px 이하일 때 적용 */
+@media only screen and (max-width: 768px) { /*576*/
+    .place-item {
+        display: flex;
+        align-items: center;
+    }
+    .place-item img {
+        max-width: 150px;
+        margin-right: 20px;
+    }
+    .popup {
+        top: 5%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: calc(100vw - 20px);
+        max-height: 90vh;
+        padding: 10px;
+        background-color: white;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        overflow-y: auto;
+        box-sizing: border-box;
+        z-index: 1002;
+    }
+    .popup-content {
+        font-size: 0.8rem;     /* 폰트 약간 축소 */
+        padding: 10px;
+        box-sizing: border-box;
+        font-family: 'Pretendard', sans-serif;
+        font-weight: bold;
+
+    }
+    .popup h2 {
+        font-size: 1rem;
+        margin-bottom: 8px;
+    }
+    .popup p {
+        margin-bottom: 8px;
+    }
+}
+.fixed-right-button {
+    position: fixed;
+    top: 10px; /* Adjust as needed */
+    right: 20px; /* Adjust as needed */
+    background-color: #4CAF50; /* Green background */
+    color: white; /* White text */
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    z-index: 1000; /* Ensure it appears above other elements */
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.fixed-right-button:hover {
+    background-color: #45a049; /* Darker green on hover */
+}
+.fixed-left-button {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1000;
+    padding: 10px 15px;
+    font-size: 16px;
+    border-radius: 5px;
+    border: none;
+    background-color: #6c757d;
+    color: white;
+    cursor: pointer;
+}
+
+.fixed-left-button:hover {
+    background-color: #5a6268;
+}
+.fixed-low-button {
+    position: fixed;
+    bottom: 10px; /* Adjust as needed */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #bc1d21; /* Green background */
+    color: white; /* White text */
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    font-family: 'Pretendard', sans-serif;
+    font-weight: bold;
+    border-radius: 0;
+    cursor: pointer;
+    z-index: 1000; /* Ensure it appears above other elements */
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.fixed-low-button:hover {
+    background-color: rgb(217, 0, 0); /* Darker green on hover */
+}
+html, body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Pretendard', sans-serif !important;
+}
+.fixed-header {
+    position: fixed; /* 화면에 고정 */
+    top: 0; /* 화면 맨 위에 위치 */
+    left: 0;
+    width: 100%; /* 화면 전체 너비 사용 */
+    height: 60px; /* 높이 설정 (조정 가능) */
+    background-color: #bc1d21; /* 검정 배경 */
+    color: white; /* 흰색 글씨 */
+    display: flex; /* Flexbox로 정렬 */
+    align-items: center; /* 세로 정렬 가운데로 */
+    z-index: 1000; /* 다른 요소 위에 표시 */
+    /* border-bottom: 2px solid #4CAF50; 하단에 초록색 줄 추가 (선택 사항) */
+}
+
+.header-image {
+    height: 40px; /* 이미지 높이 조정 */
+    margin-left: 20px; /* 왼쪽 여백 */
+}
+
+.header-title {
+    flex: 1; /* 제목을 가운데 정렬 */
+    text-align: center; /* 텍스트 가운데 정렬 */
+    font-size: 20px; /* 글자 크기 설정 */
+    font-family: 'Pretendard', sans-serif;
+    font-weight: bold;
+    color: white;
+}
+.list-container {
+    margin-top: 70px; /* 고정 헤더를 고려한 여백 */
+}
+
+/* stamp */
+.event-description {
+    padding-top: 80px; /* 여분 공간 추가 */
+}
+
+@media (max-width: 768px) {
+    .event-description {
+        padding-top: 80px; /* 모바일에서는 더 많은 여백 추가 */
+    }
+}
+/* [godfather_info] event-image */
+.event-image {
+    margin-top: 20px; /* 기본 여백 */
+}
+
+@media (max-width: 768px) {
+    .event-image {
+        margin-top: 12px; /* 모바일 화면에서 여백 축소 */
+    }
+}
+/* footer */
+footer p {
+    font-size: 14px; /* 기본 폰트 크기 */
+}
+
+@media (max-width: 768px) { /* 화면 폭이 768px 이하일 때 (모바일) */
+    footer p {
+        font-size: 12px; /* 모바일에서 폰트 크기 줄임 */
+    }
+}
+
+@media (max-width: 480px) { /* 더 작은 화면 (예: 스마트폰) */
+    footer p {
+        font-size: 10px; /* 더 작은 폰트 크기 */
+    }
+}
+/* 갓파더위크 로고*/
+.responsive-logo {
+    max-width: 100%; /* 이미지가 부모 요소를 넘지 않도록 설정 */
+    height: auto; /* 비율을 유지하면서 높이 조정 */
+    display: block; /* 가운데 정렬 문제 방지 */
+    margin: 0 auto; /* 가로 중앙 정렬 */
+}
+@media (min-width: 1024px) {
+    .responsive-logo {
+        max-width: 40%; /* 노트북 화면에서는 이미지 너비를 줄임 */
+    }
+}
+@media (max-width: 768px) {
+    .responsive-logo {
+        max-width: 80%; /* 작은 화면에서는 더 작은 크기 설정 */
+    }
+}
+.logo-container {
+    text-align: center; /* 부모 요소에서 이미지 가운데 정렬 */
+    max-width: 100%; /* 부모 크기를 제한 */
+    overflow: hidden; /* 부모보다 큰 이미지 잘림 방지 */
+}
+/* 고정 버튼 스타일 (우측 정중앙) */
+.fixed-request-quote-button {
+    position: fixed;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+    z-index: 1000;
+    padding: 10px 15px;
+    font-size: 16px;
+    border-radius: 5px;
+    border: none;
+    background-color: #007bff; /* 원하는 배경색 */
+    color: white;
+    cursor: pointer;
+}
+
+.fixed-request-quote-button:hover {
+    background-color: #0056b3;
+}
+
+/* 팝업 내부 버튼 스타일 */
+.popup .popup-content .fixed-low-button {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    position: static;
+    margin-top: 10px;
+}
+
+.popup .popup-content .fixed-low-button:hover {
+    background-color: #218838;
+}
+
+.container.list-container {
+    margin-top: 20px;
+    padding: 20px;
+}
+
+.fixed-header {
+    margin-bottom: 20px;
+}
+
+.construction-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.construction-item {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+}
+
+.construction-details {
+    padding: 15px;
+}
+
+.construction-details h2 {
+    margin-top: 0;
+    margin-bottom: 5px;
+    font-size: 1.2rem;
+}
+
+.construction-details p {
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+    color: #555;
+}
+
+.pagination {
+    margin-top: 20px;
+}

@@ -9,4 +9,5 @@ urlpatterns = [
     path('delete/<int:pk>/', views.construction_delete, name='construction_delete'),
     path('bulk_delete/', views.bulk_delete_construction, name='bulk_delete_construction'),
     path('upload_image_url/', views.upload_image_view, name='upload_image_url'),
+    path('construction/image/delete/', views.delete_item_image, name='delete_item_image'),
 ]

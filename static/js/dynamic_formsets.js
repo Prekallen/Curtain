@@ -6,14 +6,14 @@ $(document).ready(function () {
             $(this).attr('data-index', index);
             $(this).find('.item-number').text(index + 1);
 
-            // 이미지 컨테이너 ID 및 버튼 data-index도 갱신
+            // 이미지 컨테이너 및 관련 속성 갱신
             $(this).find('.image-container').attr('id', `image-container-${index}`);
             $(this).find('.add-image').attr('data-index', index);
             $(this).find('.image-management-form').attr('data-index', index);
         });
     }
 
-    // 이미지 미리보기 및 HEIC 변환
+    // HEIC 변환 및 미리보기 처리
     $(document).on('change', '.image-input', function () {
         const fileInput = this;
         const file = fileInput.files[0];
@@ -72,67 +72,110 @@ $(document).ready(function () {
         reader.readAsDataURL(file);
     });
 
-    // 이미지 삭제
-    $(document).on('click', '.delete-image', function () {
+    // 클라이언트에서 이미지 삭제
+    $(document).on('click', '.delete-image-client', function () {
+        const $form = $(this).closest('.image-form');
         const $itemForm = $(this).closest('.item-form');
         const index = $itemForm.data('index');
         const container = $(`#image-container-${index}`);
-        const totalFormsInput = $(`input[name="images-${index}-TOTAL_FORMS"]`);
-        const imageForms = container.find('.image-form');
+        $form.remove();
 
-        if (imageForms.length > 1) {
-            $(this).closest('.image-form').remove();
-            totalFormsInput.val(imageForms.length - 1);
-        } else {
+        const updatedCount = container.find('.image-form').length;
+        if (updatedCount === 0) {
             alert('최소 한 개의 이미지는 등록해야 합니다.');
+            container.append($form); // 복구
+        } else {
+            $(`input[name="images-${index}-TOTAL_FORMS"]`).val(updatedCount);
         }
     });
 
-    // 이미지 추가
+    // 서버에 등록된 이미지 삭제
+    $(document).on('click', '.delete-image-server', function () {
+        const btn = $(this);
+        const imageId = btn.data('image-id');
+        const $form = btn.closest('.image-form');
+        const $itemForm = btn.closest('.item-form');
+        const index = $itemForm.data('index');
+        const container = $(`#image-container-${index}`);
+
+        if (!confirm('정말 이 이미지를 삭제하시겠습니까?')) return;
+
+        $.ajax({
+            url: '/construction/image/delete/',
+            type: 'POST',
+            data: {
+                image_id: imageId,
+                csrfmiddlewaretoken: $('[name="csrfmiddlewaretoken"]').val()
+            },
+            success: function (res) {
+                if (res.success) {
+                    $form.remove();
+                    const updatedCount = container.find('.image-form').length;
+                    if (updatedCount === 0) {
+                        alert('최소 한 개의 이미지는 등록해야 합니다.');
+                        location.reload();  // 서버에서 제거된 상태라 복구 불가, 새로고침
+                    } else {
+                        $(`input[name="images-${index}-TOTAL_FORMS"]`).val(updatedCount);
+                    }
+                } else {
+                    alert('삭제 실패: ' + res.error);
+                }
+            },
+            error: function (xhr) {
+                alert('에러 발생: ' + xhr.responseText);
+            }
+        });
+    });
+
     $(document).on('click', '.add-image', function () {
         const index = $(this).data('index');
-        const container = $(`#image-container-${index}`);
+        const $container = $(`#image-container-${index}`);
         const totalFormsInput = $(`input[name="images-${index}-TOTAL_FORMS"]`);
-        let formCount = parseInt(totalFormsInput.val());
 
-        if (formCount >= maxImages) {
+        let currentCount = $container.find('.image-form').length;
+
+        if (currentCount >= 5) {
             alert('이미지는 품목당 최대 5개까지만 추가할 수 있습니다.');
             return;
         }
 
-        const firstForm = container.find('.image-form:first');
-        const newForm = firstForm.clone();
+        // 첫 번째 이미지 form을 복제 (image-form 안에 input 파일 있고, 필요시 삭제 버튼 포함)
+        const $newForm = $container.find('.image-form:first').clone(true, true);
 
-        newForm.find('input, select, textarea').each(function () {
-            const name = $(this).attr('name');
-            const id = $(this).attr('id');
-            if (name) {
-                const newName = name.replace(/(images-\d+)-\d+/, `images-${index}-${formCount}`);
-                $(this).attr('name', newName);
+        // input name/id 및 값 초기화
+        $newForm.find('input').each(function () {
+            const $input = $(this);
+            if ($input.attr('type') === 'hidden' && $input.attr('name')?.includes('DELETE')) {
+                $input.remove();
+                return;
             }
-            if (id) {
-                const newId = id.replace(/(id_images-\d+)-\d+/, `id_images-${index}-${formCount}`);
-                $(this).attr('id', newId);
-            }
-            $(this).val('');
+            const name = $input.attr('name');
+            const id = $input.attr('id');
+
+            if (name) $input.attr('name', name.replace(/images-\d+-\d+/, `images-${index}-${currentCount}`));
+            if (id) $input.attr('id', id.replace(/id_images-\d+-\d+/, `id_images-${index}-${currentCount}`));
+            $input.val('');
         });
 
+        // 이미지 프리뷰 초기화
+        $newForm.find('.image-preview').remove();
+        $newForm.find('.delete-image-server').remove();
 
-        newForm.find('.image-preview').hide().attr('src', '');
-        newForm.find('.image-loading').remove();
-        newForm.find('input[type="file"]').addClass('image-input');
-
-        container.append(newForm);
-        totalFormsInput.val(formCount + 1);
+        $container.find('.add-image').parent().before($newForm); // 버튼 위에 삽입
+        totalFormsInput.val(currentCount + 1);
     });
 
     // 품목 삭제
     $(document).on('click', '.delete-item', function () {
-        if ($('.item-form').length > 1) {
-            $(this).closest('.item-form').remove();
-            updateItemNumbers();
+        const $itemForm = $(this).closest('.item-form');
+        const $deleteCheckbox = $itemForm.find('input[type="checkbox"][name$="-DELETE"]');
+        if ($deleteCheckbox.length) {
+            $itemForm.hide();
+            $deleteCheckbox.prop('checked', true);
         } else {
-            alert('최소 1개의 품목은 남겨야 합니다.');
+            $itemForm.remove();
+            $('#id_items-TOTAL_FORMS').val($('.item-form').length);
+            updateItemNumbers();
         }
     });
 
@@ -141,70 +184,80 @@ $(document).ready(function () {
     const itemContainer = $('#formset-container');
     const itemTemplate = itemContainer.children('.item-form:first').clone();
 
+    itemTemplate.find('input, select, textarea').val('');
+    itemTemplate.find('.image-preview').hide().attr('src', '');
+    itemTemplate.find('.image-loading').remove();
+    itemTemplate.find('.image-form').not(':first').remove();
+
     $('#add-item-btn').on('click', function () {
         let formIdx = parseInt(totalItemsInput.val());
         const newItem = itemTemplate.clone();
 
-        // 폼 필드 이름/ID 갱신
+        // 필드 업데이트
         newItem.find('input, select, textarea').each(function () {
             const name = $(this).attr('name');
             const id = $(this).attr('id');
             if (name) {
-                const newName = name
-                    .replace(/items-\d+-/, `items-${formIdx}-`)
-                    .replace(/images-\d+-/, `images-${formIdx}-`);
-                $(this).attr('name', newName);
+                $(this).attr('name', name
+                    .replace(/items-\d+-/g, `items-${formIdx}-`)
+                    .replace(/images-\d+-\d+-/g, `images-${formIdx}-0-`)
+                    .replace(/images-\d+-/g, `images-${formIdx}-`));
             }
             if (id) {
-                const newId = id
-                    .replace(/id_items-\d+-/, `id_items-${formIdx}-`)
-                    .replace(/id_images-\d+-/, `id_images-${formIdx}-`);
-                $(this).attr('id', newId);
+                $(this).attr('id', id
+                    .replace(/id_items-\d+-/g, `id_items-${formIdx}-`)
+                    .replace(/id_images-\d+-\d+-/g, `id_images-${formIdx}-0-`)
+                    .replace(/id_images-\d+-/g, `id_images-${formIdx}-`));
             }
             $(this).val('');
         });
 
-
-        // 이미지 미리보기 초기화
+        newItem.find('input[name$="-id"]').val('');
         newItem.find('.image-preview').hide().attr('src', '');
         newItem.find('.image-loading').remove();
         newItem.find('.image-form').not(':first').remove();
 
-        // 이미지 container ID 및 버튼 data-index 지정
+        newItem.find('.image-input').off('change').on('change'); // 방지
+
         const imageContainer = newItem.find('.image-container');
         imageContainer.attr('id', `image-container-${formIdx}`);
         newItem.find('.add-image').attr('data-index', formIdx);
 
-        // 관리 form 클론 및 갱신
+        // 이미지 관리 폼 복제
         const mgmtFormSource = $('.image-management-form[data-index="0"]').clone();
         mgmtFormSource.attr('data-index', formIdx);
         mgmtFormSource.find('input[type="hidden"]').each(function () {
-            const name = $(this).attr('name').replace(/images-0-/, `images-${formIdx}-`);
-            const id = $(this).attr('id').replace(/id_images-0-/, `id_images-${formIdx}-`);
-            $(this).attr({ name, id });
+            const newName = $(this).attr('name').replace(/images-0-/, `images-${formIdx}-`);
+            const newId = $(this).attr('id').replace(/id_images-0-/, `id_images-${formIdx}-`);
+            $(this).attr('name', newName).attr('id', newId);
 
-            if (name.endsWith('-INITIAL_FORMS')) {
-                $(this).val('0');
-            } else if (name.endsWith('-TOTAL_FORMS')) {
-                $(this).val('1');
-            }
+            if (newName.endsWith('-TOTAL_FORMS')) $(this).val('1');
+            if (newName.endsWith('-INITIAL_FORMS')) $(this).val('0');
         });
 
         imageContainer.before(mgmtFormSource);
 
-        // 첫 번째 이미지 필드도 새 인덱스로 갱신
+        // 첫 번째 이미지 필드 재설정
         newItem.find('.image-form:first input').each(function () {
             const name = $(this).attr('name');
             const id = $(this).attr('id');
             if (name && id) {
-                const newName = name.replace(/images-\d+-\d+-/, `images-${formIdx}-0-`);
-                const newId = id.replace(/id_images-\d+-\d+-/, `id_images-${formIdx}-0-`);
-                $(this).attr({ name: newName, id: newId }).val('');
+                $(this).attr({
+                    name: name.replace(/images-\d+-\d+-/, `images-${formIdx}-0-`),
+                    id: id.replace(/id_images-\d+-\d+-/, `id_images-${formIdx}-0-`)
+                }).val('');
             }
         });
 
         itemContainer.append(newItem);
         totalItemsInput.val(formIdx + 1);
         updateItemNumbers();
+    });
+
+    // CSRF token 전역 설정
+    $.ajaxSetup({
+        headers: {
+            'X-CSRFToken': $('meta[name="csrf-token"]').attr('content')
+        }
     });
 });
