@@ -34,7 +34,9 @@ class Construction(models.Model):
 class ConstItem(models.Model):
     id = models.AutoField(primary_key=True, verbose_name='기본키')
     # on_delete=models.CASCADE Construction이 삭제 되면 ConstItem도 삭제
-    const_id    = models.ForeignKey(Construction, on_delete=models.CASCADE, related_name='items')
+    const_id    = models.ForeignKey(
+        Construction, on_delete=models.CASCADE, related_name='items', verbose_name="시공"
+    )
     ITEM_TYPE_CHOICES = [
         ('innerCurtain', '속 커튼'),
         ('outerCurtain', '겉 커튼'),
@@ -56,7 +58,9 @@ class ConstItem(models.Model):
 class ItemImage(models.Model):
     id          = models.AutoField(primary_key=True, verbose_name='기본키')
     # on_delete=models.CASCADE ConstItme이 삭제 되면 ItemImage도 삭제
-    item_id     = models.ForeignKey(ConstItem, on_delete=models.CASCADE, related_name='images')
+    item_id     = models.ForeignKey(
+        ConstItem, on_delete=models.CASCADE, related_name='images', verbose_name="품목 이미지"
+    )
     image_path  = models.ImageField(upload_to='images/', null=True, blank=True)
 
     def __str__(self):
