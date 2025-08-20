@@ -2,6 +2,13 @@ from django import forms
 from customer.models import Customer
 from django.core.validators import RegexValidator
 
+class CustomerForm(forms.ModelForm):
+    agree_personal_info = forms.BooleanField(label="개인정보 제공에 동의합니다.", required=True)
+
+    class Meta:
+        model = Customer
+        fields = ['name', 'phone', 'address']
+
 class RegionLevel1Form(forms.Form):
     region_level1 = forms.CharField(
         label='광역시/도',

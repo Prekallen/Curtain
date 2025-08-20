@@ -1,0 +1,68 @@
+<div class="form-group">
+    <label for="region_level1">광역시/도</label>
+    <select id="region_level1" class="form-control">
+        <option value="">선택하세요</option>
+    </select>
+</div>
+<div class="form-group">
+    <label for="region_level2">시/군/구</label>
+    <select id="region_level2" class="form-control">
+        <option value="">선택하세요</option>
+    </select>
+</div>
+<div class="form-group">
+    <label for="region_level3">읍/면/동</label>
+    <select id="region_level3" class="form-control">
+        <option value="">선택하세요</option>
+    </select>
+</div>
+
+<script>
+    $(document).ready(function () {
+        // 광역시/도 로드
+        loadRegions("level1", "");
+
+        // 단계별 이벤트 리스너
+        $("#region_level1").change(function () {
+            const selected = $(this).val();
+            loadRegions("level2", selected);
+        });
+
+        $("#region_level2").change(function () {
+            const selected = $(this).val();
+            loadRegions("level3", selected);
+        });
+
+        // 전체 주소 저장
+        function loadRegions(level, parent) {
+            $.ajax({
+                url: "{% url 'get_regions' %}",
+                data: { level: level, parent: parent },
+                success: function (response) {
+                    let target = $(`#${level}`);
+                    target.empty().append('<option value="">선택하세요</option>');
+                    response.regions.forEach((region) => {
+                        target.append(`<option value="${region}">${region}</option>`);
+                    });
+                },
+                error: function () {
+                    alert("데이터를 로드하는 데 실패했습니다.");
+                },
+            });
+        }
+    });
+    $('form').submit(function (event) {
+        event.preventDefault();
+        const name = $('#id_name').val();
+        const phone = $('#id_phone').val();
+        const address = `${regionLevel1} ${regionLevel2} ${regionLevel3} ${$('#id_detailed_address').val()}`;
+
+        const confirmed = confirm(`다음 정보를 확인해주세요:\n- 이름: ${name}\n- 전화번호: ${phone}\n- 주소: ${address}\n\n신청하시겠습니까?`);
+
+        if (confirmed) {
+            // 폼 제출
+            this.submit();
+        }
+    });
+
+</script>

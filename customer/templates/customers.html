@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+<link rel="stylesheet" href="{% static 'css/navbar.css' %}">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<style>
+    .same-width {
+        width: 40% !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        {% include "navbar.html" %}
+
+        <div id="main-content" class="col pt-4">
+            <h2>고객 관리</h2>
+
+            <form id="filter-form" method="get" class="mb-3" action="{% url 'customer_list' %}">
+                <!-- 첫번째 행: 주소와 이름 검색 -->
+                <div class="form-row mb-3">
+                    <div class="col">
+                        <select name="region_level1" id="region_level1" class="form-control">
+                            <option value="">광역시/도 (전체)</option>
+                            {% for r in region_level1_choices %}
+                            <option value="{{ r }}" {% if selected_region_level1 == r %}selected{% endif %}>{{ r }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col">
+                        <select name="region_level2" id="region_level2" class="form-control">
+                            <option value="">시/군/구 (전체)</option>
+                            {% for r in region_level2_choices %}
+                            <option value="{{ r }}" {% if selected_region_level2 == r %}selected{% endif %}>{{ r }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col">
+                        <select name="region_level3" id="region_level3" class="form-control">
+                            <option value="">읍/면/동 (전체)</option>
+                            {% for r in region_level3_choices %}
+                            <option value="{{ r }}" {% if selected_region_level3 == r %}selected{% endif %}>{{ r }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col">
+                        <input type="text" name="q" class="form-control" placeholder="고객 이름 / 전화번호 검색" value="{{ q }}">
+                    </div>
+                    <div class="col">
+                        <button type="submit" class="btn btn-primary btn-block">검색</button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- 고객 목록 테이블 -->
+            <table class="table table-bordered table-hover">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>고객명</th>
+                    <th>전화번호</th>
+                    <th>주소</th>
+                    <th>방문 예정일</th>
+                    <th>요청일</th>
+                    <th>희망 시간대</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for customer in customers %}
+                <tr>
+                    <td>{{ customer.id }}</td>
+                    <td>{{ customer.name }}</td>
+                    <td>{{ customer.phone }}</td>
+                    <td>
+                        {{ customer.region_level1 }}
+                        {{ customer.region_level2 }}
+                        {{ customer.region_level3 }}
+                        {{ customer.detailed_address }}
+                    </td>
+                    <td>{% if customer.visit_schedule %}{{ customer.visit_schedule|date:"Y-m-d H:i" }}{% else %}-{% endif %}</td>
+                    <td>{{ customer.created_at|date:"Y-m-d H:i" }}</td>
+                    <td>
+                        {% if customer.visit_preferred_time == "specific" %}
+                        {{ customer.specific_visit_time }}
+                        {% else %}
+                        {% for value, label in customer.VISIT_TIME_CHOICES %}
+                        {% if customer.visit_preferred_time == value %}{{ label }}{% endif %}
+                        {% endfor %}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center">고객 정보가 없습니다.</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

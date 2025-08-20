@@ -38,6 +38,7 @@
 
                     <!-- 품목 필드 -->
                     <div class="row mb-3">
+                        {{ const_item_form.id.as_hidden }}
                         <div class="col-md-4">
                             <label for="{{ const_item_form.item_type.id_for_label }}" class="form-label">품목 유형</label>
                             {{ const_item_form.item_type|add_class:"form-select" }}
@@ -110,7 +111,13 @@
         </fieldset>
 
         <!-- Submit Form -->
-        <button type="submit" class="btn btn-success mt-4">저장</button>
+        <button type="submit" class="fixed-low-button btn btn-success mt-4">저장</button>
+        <button
+                type="button"
+                class="btn btn-secondary ms-2 fixed-right-button"
+                onclick="location.href='{% if page_number %}/const/list/?p={{ page_number }}{% else %}/const/list/{% endif %}'">
+            시공 리스트
+        </button>
     </form>
 </div>
 {% block scripts %}

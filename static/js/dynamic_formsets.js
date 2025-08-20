@@ -171,14 +171,15 @@ $(document).ready(function () {
         }
 
         // 삭제 처리
-        const $deleteCheckbox = $itemForm.find('input[type="checkbox"][name$="-DELETE"]');
-        if ($deleteCheckbox.length) {
+        const $deleteInput = $itemForm.find('[name$="-DELETE"]');
+        if ($deleteInput.length) {
             // Django 폼셋의 DELETE 체크박스가 있는 경우
-            $deleteCheckbox.prop('checked', true); // 삭제 플래그 설정
+            $deleteInput.val('on'); // 삭제 플래그 설정
             $itemForm.hide(); // UI에서 숨기기
         } else {
-            // DELETE 체크박스가 없으면 직접 제거
+            // DELETE 직접 제거
             $itemForm.remove();
+            alert("삭제 체크박스를 찾을 수 없습니다. 폼 삭제가 처리되지 않았습니다.");
         }
 
         // 삭제 후 품목 개수 재확인 및 업데이트
@@ -187,7 +188,7 @@ $(document).ready(function () {
         console.log('삭제 후 품목 개수:', totalItems);
 
         // 총 폼 개수를 Django 관리 필드에 반영
-        $('#id_items-TOTAL_FORMS').val(totalItems);
+        $('#id_items-TOTAL_FORMS').val($itemForm.length - 1);
 
         updateItemNumbers();
     });

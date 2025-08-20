@@ -158,79 +158,112 @@ def construction_update(request, pk):
     ItemImageFormSet = get_item_image_formset(is_update=True)
 
     if request.method == "POST":
+        # POST: 폼셋 및 기본 폼 인스턴스 초기화
         construction_form = ConstructionForm(request.POST, request.FILES, instance=instance)
         const_item_formset = UpdateConstItemFormSet(request.POST, request.FILES, instance=instance)
 
-        # 이미지 Formset 연결
+        # 이미지 폼셋 연결 (동적으로 처리)
         attach_image_formsets(ItemImageFormSet, const_item_formset, request)
-
-        # 폼 유효성 검사
+        # 유효성 검증
         construction_valid = construction_form.is_valid()
-        items_valid = const_item_formset.is_valid()
+        const_item_valid = const_item_formset.is_valid()
 
-        # 삭제된 항목 무시
-        if construction_valid and items_valid:
+        if not const_item_valid:
+            for form in const_item_formset:
+                if not form.is_valid():
+                    print("폼 에러:", form.errors)
+                    print("폼 데이터:", form.cleaned_data if hasattr(form, 'cleaned_data') else form.initial)
+        if construction_valid and const_item_valid:
             try:
+                # 데이터 저장을 하나의 트랜잭션으로 처리
                 with transaction.atomic():
-                    # 부모 구성 저장
+                    # 기본 폼 저장
                     construction = construction_form.save(commit=False)
                     construction.manager = request.user
                     construction.writer = request.user.name
-                    _save_board_with_lat_long(construction, construction.address)
+                    _save_board_with_lat_long(construction, construction.address)  # 별도 유효성 처리
                     construction.save()
 
-                    # 자식 폼셋에서 삭제된 항목 삭제
-                    for form in const_item_formset:
-                        if form.cleaned_data.get('DELETE') is True:
-                            if form.instance.pk:
-                                # 연결된 이미지도 삭제할 경우 처리 필요
-                                form.instance.delete()
-                        else:
-                            # 삭제되지 않은 경우 저장
-                            const_item = form.save(commit=False)
-                            const_item.construction = construction
-                            const_item.save()
-
-                    # 이미지 폼셋 처리
+                    # 폼셋 저장 처리
                     for item_form in const_item_formset:
+                        # 삭제된 폼은 처리 제외
+                        if item_form.cleaned_data.get('DELETE', False):
+                            if item_form.instance.pk:  # 기존 데이터라면 삭제
+                                item_form.instance.delete()
+                                print(f"{item_form.instance} 삭제 완료")
+                            continue
+                        print('DELETE : ',item_form.cleaned_data.get('DELETE'))
+                        # 항목 저장
+                        const_item = item_form.save(commit=False)
+                        const_item.construction = construction
+                        const_item.save()
+
+                        # 이미지 폼셋 저장 처리
                         if hasattr(item_form, 'image_formset') and item_form.image_formset.is_valid():
                             item_form.image_formset.save()
 
+                    # 작업 완료 메시지
                     messages.success(request, "시공 정보가 성공적으로 수정되었습니다.")
                     return redirect("construction_list")
+
             except Exception as e:
-                messages.error(request, f"시공 정보 저장 중 오류가 발생하였습니다: {e}")
+                # 트랜잭션 처리 중 오류 발생 시 롤백
+                messages.error(request, f"수정 중 오류가 발생했습니다: {e}")
         else:
+            # 폼 유효성 검증 실패 메시지
             messages.error(request, "입력한 정보에 오류가 있습니다. 다시 확인해주세요.")
 
     else:
+        # GET: 기본 폼 및 폼셋 초기화
         construction_form = ConstructionForm(instance=instance)
         const_item_formset = UpdateConstItemFormSet(instance=instance)
+
+        # GET: 이미지 폼셋 연결
         attach_image_formsets(ItemImageFormSet, const_item_formset, request)
 
+    # 템플릿 렌더링
     return render(request, 'construction_update.html', {
         'construction_form': construction_form,
         'const_item_formset': const_item_formset,
         'construction': instance,
-        'manager_page': True,
+        'manager_page': True,  # 페이지 렌더링 시 관련 정보를 전달
     })
+
 
 def attach_image_formsets(ItemImageFormSet, const_item_formset, request):
     """
     ConstItemForm에 연결된 이미지 Formset을 동적으로 연결
     """
-    for form in const_item_formset.forms:
-        if form.cleaned_data.get('DELETE', False):  # 삭제된 폼이라면 건너뛴다
-            continue
+    if request.method == "POST":
+        # POST 요청인 경우
+        for form in const_item_formset.forms:
+            if not hasattr(form, 'cleaned_data') or not form.is_valid():
+                continue  # 유효하지 않은 폼은 건너뜀
 
-        if form.instance.pk:  # 이미 저장된 ConstItem만 처리
-            form.image_formset = ItemImageFormSet(
-                data=request.POST or None,
-                files=request.FILES or None,
-                instance=form.instance
-            )
-        else:
-            form.image_formset = None  # 새로 생성된 경우에는 비어 있는 FormSet 처리
+            # 삭제된 폼 건너뜀
+            if form.cleaned_data.get('DELETE', False):
+                continue
+
+            # 저장된 ConstItem에 대해 이미지 Formset 처리
+            instance = form.instance
+            if instance.pk:
+                form.image_formset = ItemImageFormSet(
+                    data=request.POST or None,
+                    files=request.FILES or None,
+                    instance=instance
+                )
+            else:
+                form.image_formset = None
+
+    else:
+        # GET 요청인 경우
+        for form in const_item_formset.forms:
+            # 저장된 ConstItem에 대해 이미지 폼셋 연결
+            instance = form.instance
+            if instance.pk:
+                form.image_formset = ItemImageFormSet(instance=instance)
+            else:
+                form.image_formset = None
 
 def validate_image_formsets(const_item_formset):
     """

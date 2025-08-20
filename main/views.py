@@ -136,6 +136,23 @@ def const_detail(request, construction_id):
     }
     return render(request, 'construction_detail_popup.html', context) # 팝업 내용을 위한 템플릿
 
+# 주소 받기
+def get_regions(request):
+    parent = request.GET.get("parent")  # 선택한 상위 지역
+    level = request.GET.get("level")  # 현재 요청한 레벨 (level1, level2 등)
+
+    # 예제 데이터 (실제로는 DB 또는 다른 소스에서 불러옴)
+    data = {
+        "level1": ["서울특별시", "부산광역시", "대구광역시"],
+        "서울특별시": ["종로구", "중구", "강남구"],
+        "종로구": ["사직동", "부암동", "청운효자동"],
+    }
+
+    # level1 선택시 하위 지역 리턴
+    results = data.get(parent, []) if level != "level1" else data["level1"]
+
+    return JsonResponse({"regions": results})
+
 # 개인 정보 제공 동의 페이지 노출 (팝업 or 페이지)
 def personal_info_check(request):
 

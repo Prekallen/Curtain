@@ -39,35 +39,56 @@ class ConstItemForm(forms.ModelForm):
 
 class ConstructionUpdateForm(ConstructionForm):
     def clean(self):
-        cleaned_data = super().clean()
-        # 필요 시 추가 유효성 검사
+        cleaned_data = super().clean()  # 기본 유효성 검사 호출
+        # 폼 데이터가 변경되지 않았지만 유효성 검사를 통과하도록 처리
+        if not self.has_changed():
+            # 필드별 필요한 동작 추가 가능
+            return cleaned_data
+
+        # 변경된 데이터에 대해 추가 유효성 검사 (예: address)
+        if 'address' in self.changed_data:
+            address = cleaned_data.get('address')
+            if not address:
+                self.add_error('address', '주소를 입력해주세요.')
+
+        # 다른 변경된 항목의 검증 추가 가능
         return cleaned_data
+
 
 class UpdateConstItemForm(ConstItemForm):
     def clean(self):
-        # 폼이 변했는지 확인
+        # 폼 삭제 여부 확인
+        if self.cleaned_data.get('DELETE', False):
+            print('폼 삭제됨: DELETE 체크됨')  # 디버깅 메시지
+            return self.cleaned_data  # 삭제된 폼은 검증 무시
+
+        # 폼 변경 사항 확인
         if not self.has_changed():
             return self.cleaned_data  # 변경되지 않았다면 기존 데이터 유지
 
-        # 변경된 항목에 대해 유효성 검사 수행
+        # 변경된 폼 내용 검증
         cleaned_data = super().clean()
+        for form in self.forms:
+            # 삭제된 폼 건너뜀
+            if form.cleaned_data.get('DELETE', False):
+                continue
 
-        # DELETE가 체크되지 않은 경우만 이미지 검증
-        if not self.cleaned_data.get('DELETE', False):
-            if hasattr(self, 'image_formset') and self.image_formset:
-                if not self.image_formset.is_valid():
-                    raise forms.ValidationError("이미지 관련 유효성 검증에 실패했습니다.")
+            # 폼 수준에서 유효성 검사를 통과하지 못한 경우 추가 처리
+            if not form.is_valid():
+                raise forms.ValidationError("한 개 이상의 폼에 문제가 있습니다.")# 이미지 폼셋 검증 - DELETE 필드가 False인 경우에만 진행
+        if hasattr(self, 'image_formset') and self.image_formset:
+            if not self.image_formset.is_valid():
+                raise forms.ValidationError("이미지 관련 유효성 검증에 실패했습니다.")
 
-                # 최소 1개 이상의 이미지가 있어야 함
-                total_images = [
-                    frm for frm in self.image_formset.forms
-                    if frm.cleaned_data and not frm.cleaned_data.get('DELETE', False)
-                ]
-                if len(total_images) < 1:
-                    raise forms.ValidationError("최소 하나 이상의 이미지를 등록해주세요.")
+            # 최소 1개 이상의 이미지를 검증 (단, 삭제되지 않은 폼만 검사)
+            total_images = [
+                frm for frm in self.image_formset.forms
+                if frm.cleaned_data and not frm.cleaned_data.get('DELETE', False)
+            ]
+            if len(total_images) < 1:
+                raise forms.ValidationError("최소 하나 이상의 이미지를 등록해주세요.")
 
         return cleaned_data
-
 
 RegisterConstItemFormSet = inlineformset_factory(
     Construction,
@@ -78,11 +99,12 @@ RegisterConstItemFormSet = inlineformset_factory(
 )
 # Update용 ConstItemFormSet
 UpdateConstItemFormSet = inlineformset_factory(
-    Construction,
-    ConstItem,
-    form=UpdateConstItemForm,
-    extra=0,
-    can_delete=True
+    parent_model=Construction,  # 부모 모델
+    model=ConstItem,  # 자식 모델
+    form=ConstItemForm,  # 사용할 Form 클래스
+    fields=['item_type', 'item_name', 'item_detail'],  # 사용할 필드
+    extra=0,  # 추가할 폼 개수
+    can_delete=True  # 삭제 여부 처리
 )
 
 class ItemImageForm(forms.ModelForm):
@@ -149,6 +171,8 @@ class UpdateItemImageFormSet(BaseItemImageFormSet):
 
             # 폼셋 검증 중 삭제 항목을 제외하고 유효한 이미지만 확인
             for form in self.forms:
+                if not form.is_valid(): # 폼 유효성 검사가 실패했으면 건너뛰는 로직 추가
+                    continue
                 if form.cleaned_data.get('DELETE'):  # DELETE 필드가 True인 경우 건너뜀
                     continue
                 if form.cleaned_data:  # 유효한 데이터가 있는 경우 (삭제되지 않은 이미지)

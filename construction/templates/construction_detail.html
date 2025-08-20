@@ -69,13 +69,13 @@
         <div class="mt-4">
             <button
                     type="button"
-                    class="btn btn-primary"
+                    class="btn btn-primary fixed-low-button"
                     onclick="location.href='/const/update/{{ const.id }}/'">
                 변경
             </button>
             <button
                     type="button"
-                    class="btn btn-secondary ms-2"
+                    class="btn btn-secondary ms-2 fixed-right-button"
                     onclick="location.href='{% if page_number %}/const/list/?p={{ page_number }}{% else %}/const/list/{% endif %}'">
                 시공 리스트
             </button>
