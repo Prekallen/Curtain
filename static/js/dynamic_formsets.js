@@ -258,57 +258,76 @@ $(document).ready(function () {
         const $form = $(fileInput).closest('.image-form');
         const $preview = $form.find('.image-preview');
 
-        if (!file) return;
+        // 파일이 없으면 초기화 후 종료
+        if (!file) {
+            $preview.hide().attr('src', '');
+            $form.find('.image-loading').remove();
+            return;
+        }
 
-        // 이전 미리보기와 로딩 상태 초기화
-        $preview.hide();
+        // 1. 미리보기와 로딩 상태 초기화 및 로더 표시
+        $preview.hide().attr('src', '');
         let $loader = $form.find('.image-loading');
+
+        // 로더가 없으면 생성하여 추가
         if ($loader.length === 0) {
             $loader = $(`
             <div class="image-loading text-center p-2">
                 <div class="spinner-border text-secondary" role="status" style="width: 1.5rem; height: 1.5rem;">
                     <span class="visually-hidden">Loading...</span>
                 </div>
-                <div>로딩 중...</div>
+                <div class="small mt-1">이미지 처리 중...</div>
             </div>
         `);
             $form.find('.image-preview-wrapper').append($loader);
         }
+        $loader.show(); // 로더를 다시 표시
 
-        // HEIC 파일일 경우 처리
-        if (file.name.toLowerCase().endsWith('.heic')) {
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                try {
-                    // 브라우저가 HEIC 지원 가능 여부 확인
-                    const img = new Image();
-                    img.onload = function () {
-                        // HEIC 지원 시 그대로 미리보기 표시
-                        $preview.attr('src', e.target.result).show();
-                        $loader.remove();
-                    };
-                    img.onerror = function () {
-                        alert('HEIC 파일을 미리보기 할 수 없습니다. 변환이 필요합니다.');
-                        $loader.html('<div class="text-danger">HEIC 미리보기 실패</div>');
-                    };
-                    img.src = e.target.result; // HEIC 파일 URL 설정
-                } catch (err) {
-                    alert('HEIC 파일 처리 중 오류가 발생했습니다: ' + err.message);
-                    $loader.html('<div class="text-danger">HEIC 미리보기 실패</div>');
-                }
-            };
-            reader.readAsDataURL(file); // HEIC 파일 Base64 URL 생성
+        const fileName = file.name.toLowerCase();
+
+        // 2. HEIC 파일 처리 (heic2any 사용)
+        if (fileName.endsWith('.heic') || fileName.endsWith('.heif')) {
+
+            // heic2any가 로드되지 않았을 경우 (CDN/스크립트 로드 실패 시) 경고
+            if (typeof heic2any === 'undefined') {
+                alert('HEIC 변환 라이브러리가 로드되지 않았습니다. HEIC 미리보기가 불가합니다.');
+                $loader.html('<div class="text-danger small">라이브러리 로드 실패</div>');
+                return;
+            }
+
+            // heic2any를 사용하여 Blob을 JPEG로 변환
+            heic2any({
+                blob: file,
+                toType: 'image/jpeg',
+                quality: 0.9,
+            })
+                .then(function (conversionResult) {
+                    // 변환 성공 시
+                    const url = URL.createObjectURL(conversionResult);
+                    $preview.attr('src', url).show();
+                    $loader.remove(); // 로더 제거
+                })
+                .catch(function (error) {
+                    // 변환 실패 시
+                    console.error("HEIC 변환 오류 (클라이언트):", error);
+                    $loader.html('<div class="text-danger small">변환 실패</div>');
+                    alert('HEIC 파일 미리보기에 실패했습니다. 다른 포맷을 사용하거나 서버에 문의하세요.');
+                });
+
             return;
         }
 
-        // HEIC 이외의 파일 처리
+        // 3. HEIC 이외의 파일 처리 (기존 로직 유지)
         const reader = new FileReader();
         reader.onload = function (e) {
             // 일반 이미지 파일 미리보기
             $preview.attr('src', e.target.result).show();
-            $loader.remove();
+            $loader.remove(); // 로더 제거
         };
-        reader.readAsDataURL(file); // 파일 Base64 URL 생성
+        reader.onerror = function () {
+            $loader.html('<div class="text-danger small">파일 읽기 오류</div>');
+        };
+        reader.readAsDataURL(file);
     });
 
     // 초기화
