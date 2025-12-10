@@ -1,1 +1,34 @@
-.venv/
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyd
+*.so
+
+# Distribution / packaging
+.Python
+env/
+venv/
+build/
+develop-eggs/
+dist/
+.installed.cfg
+*.egg-info
+*.manifest
+*.spec
+
+# Django stuff
+*.log
+*.pot
+*.mo
+*.xml
+local_settings.py
+db.sqlite3
+/media/ # media 파일을 DB에 직접 올리지 않는 경우 (Binary 대용량 파일)
+.DS_Store
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# IDE (Optional, but recommended)
+.idea/  # IntelliJ/PyCharm 설정 폴더
+.vscode/ # VS Code 설정 폴더.venv/
